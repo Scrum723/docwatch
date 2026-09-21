@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DOC Watch — Local Playground</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #141e2e;
+      --accent: #3dd6c6;
+      --warn: #ffb020;
+      --text: #e8eef7;
+      --muted: #93a4bd;
+      --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2b45, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #243247;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h1 { margin: 0; font-size: 1.35rem; letter-spacing: 0.02em; }
+    h1 span { color: var(--accent); }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: #243247;
+      color: var(--warn);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    main { padding: 1.25rem 1.5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; align-items: end; }
+    label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+    select, input, button, textarea {
+      font: inherit;
+      border-radius: 10px;
+      border: 1px solid #2c3d57;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.65rem 0.8rem;
+    }
+    button {
+      background: linear-gradient(135deg, #2bc4b4, #1f8f9e);
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #243247; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+    .card {
+      background: var(--panel);
+      border: 1px solid #243247;
+      border-radius: 14px;
+      padding: 0.9rem;
+    }
+    .card h3 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+    pre {
+      background: #0a101a;
+      border: 1px solid #243247;
+      border-radius: 12px;
+      padding: 1rem;
+      overflow: auto;
+      max-height: 420px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.85rem;
+    }
+    .human {
+      background: #102033;
+      border-left: 4px solid var(--accent);
+      padding: 1rem;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 1rem;
+      line-height: 1.45;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><span>DOC</span> Watch — playground</h1>
+      <div class="badge" id="mockBadge">MOCK_RING mode — not live Ring mesh</div>
+    </div>
+    <div>
+      <a href="/index.html">Alexa+ sim →</a>
+    </div>
+  </header>
+  <main>
+    <p style="color:var(--muted);max-width:60ch">
+      Local brain for dock &amp; home weather intelligence. NWS live. Ring sensors mock-labeled.
+      MCP Streamable HTTP at <code>/mcp</code> (spec 2025-11-25).
+    </p>
+    <div class="row">
+      <label>Location
+        <select id="location">
+          <option value="rochester">Rochester / North Greece / Long Pond</option>
+          <option value="fairport">Fairport, NY</option>
+          <option value="long_pond">Long Pond, Greece NY</option>
+        </select>
+      </label>
+      <label>Asset
+        <select id="asset">
+          <option value="dock">dock</option>
+          <option value="boat">boat</option>
+          <option value="van">van</option>
+          <option value="home">home</option>
+        </select>
+      </label>
+      <button id="runCore" type="button">Run core loop</button>
+      <button class="secondary" id="listTools" type="button">List tools</button>
+    </div>
+    <div class="grid" id="toolButtons"></div>
+    <div class="human" id="human">Pick a tool or run the core loop for Rochester.</div>
+    <pre id="out">{}</pre>
+  </main>
+  <script>
+    const tools = [
+      ["get_current_conditions", "Current NWS conditions"],
+      ["get_alerts", "Active NWS alerts"],
+      ["get_forecast", "24h forecast"],
+      ["get_dock_advice", "Pull boat / cover dock"],
+      ["get_spoken_briefing", "60s spoken briefing"],
+      ["get_home_sensors", "Mock Ring sensors"],
+      ["set_watch", "Set watch thresholds"],
+      ["describe_features", "Mesh & join explain"],
+    ];
+
+    const loc = () => document.getElementById("location").value;
+    const asset = () => document.getElementById("asset").value;
+    const humanEl = document.getElementById("human");
+    const outEl = document.getElementById("out");
+
+    function show(result) {
+      const structured = result.structuredContent || result;
+      humanEl.textContent = structured.human || result.human || JSON.stringify(result);
+      outEl.textContent = JSON.stringify(structured, null, 2);
+    }
+
+    async function callTool(name, body) {
+      humanEl.textContent = "Calling " + name + "…";
+      const res = await fetch("/api/tools/" + name, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      show(data);
+      return data;
+    }
+
+    const grid = document.getElementById("toolButtons");
+    for (const [name, blurb] of tools) {
+      const card = document.createElement("button");
+      card.className = "card";
+      card.type = "button";
+      card.style.textAlign = "left";
+      card.innerHTML = "<h3>" + name + "</h3><p>" + blurb + "</p>";
+      card.onclick = async () => {
+        card.disabled = true;
+        try {
+          const body = { location: loc() };
+          if (name === "get_dock_advice") body.asset = asset();
+          if (name === "get_forecast") body.hours = 24;
+          if (name === "get_spoken_briefing") body.seconds = 60;
+          if (name === "set_watch") Object.assign(body, { windMph: 25, freezeTempF: 36, flood: true });
+          await callTool(name, body);
+        } catch (e) {
+          humanEl.textContent = String(e.message || e);
+          outEl.textContent = String(e);
+        } finally {
+          card.disabled = false;
+        }
+      };
+      grid.appendChild(card);
+    }
+
+    document.getElementById("listTools").onclick = async () => {
+      const res = await fetch("/api/tools");
+      const data = await res.json();
+      humanEl.textContent = "MCP tools exposed: " + data.tools.join(", ");
+      outEl.textContent = JSON.stringify(data, null, 2);
+    };
+
+    document.getElementById("runCore").onclick = async () => {
+      const btn = document.getElementById("runCore");
+      btn.disabled = true;
+      try {
+        const location = loc();
+        await callTool("get_current_conditions", { location });
+        await callTool("get_alerts", { location });
+        await callTool("get_dock_advice", { location, asset: asset() });
+        await callTool("get_spoken_briefing", { location, seconds: 60 });
+        await callTool("get_home_sensors", { location });
+      } catch (e) {
+        humanEl.textContent = String(e.message || e);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    fetch("/health").then(r => r.json()).then(h => {
+      document.getElementById("mockBadge").textContent = h.mockRing
+        ? "MOCK_RING=true — sensors are labeled mock"
+        : "MOCK_RING=false";
+    }).catch(() => {});
+  </script>
+</body>
+</html>

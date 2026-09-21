@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DOC Watch — Alexa+ Simulation</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --card: #171b22;
+      --alexa: #00caff;
+      --text: #f2f5f8;
+      --muted: #9aa7b5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #0b0d11;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+    .phone {
+      width: min(420px, 100%);
+      background: linear-gradient(180deg, #1a2030, #10141c);
+      border: 1px solid #2a3344;
+      border-radius: 28px;
+      padding: 1.25rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+    .orb {
+      width: 72px; height: 72px; border-radius: 50%;
+      margin: 0.5rem auto 1rem;
+      background: radial-gradient(circle at 30% 30%, #7ef, var(--alexa), #046);
+      box-shadow: 0 0 30px rgba(0,202,255,0.45);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+    h1 { text-align: center; font-size: 1.15rem; margin: 0 0 0.25rem; }
+    .sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+    .badge {
+      text-align: center;
+      color: #ffb020;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+    .chat {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 0.75rem;
+      height: 360px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .msg {
+      max-width: 92%;
+      padding: 0.7rem 0.85rem;
+      border-radius: 14px;
+      line-height: 1.4;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
+    }
+    .user { align-self: flex-end; background: #243044; }
+    .agent { align-self: flex-start; background: #102636; border: 1px solid #1d4a5c; }
+    .composer { display: flex; gap: 0.5rem; margin-top: 0.85rem; }
+    input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid #2a3344;
+      background: #0f131a;
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      font: inherit;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      background: var(--alexa);
+      color: #032;
+      font-weight: 700;
+      padding: 0 1rem;
+      cursor: pointer;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+    .chips button {
+      background: #1c2433;
+      color: var(--text);
+      font-size: 0.75rem;
+      padding: 0.45rem 0.7rem;
+      font-weight: 600;
+    }
+    a { color: var(--alexa); font-size: 0.85rem; }
+    .footer { text-align: center; margin-top: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="orb" aria-hidden="true"></div>
+    <h1>Alexa+ · DOC Watch</h1>
+    <div class="sub">Simulated Agent Skill · MCP-backed</div>
+    <div class="badge">SIMULATION — MOCK Ring sensors · live NWS</div>
+    <div class="chat" id="chat"></div>
+    <div class="chips">
+      <button type="button" data-q="Alexa, what's my dock weather in Rochester?">Dock weather</button>
+      <button type="button" data-q="Any freeze or flood risk in the next twelve hours?">12h risk</button>
+      <button type="button" data-q="Should I pull the boat?">Pull the boat?</button>
+      <button type="button" data-q="Give me a sixty-second briefing.">60s briefing</button>
+      <button type="button" data-q="Show my home sensors.">Home sensors</button>
+      <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
+    </div>
+    <form class="composer" id="form">
+      <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
+      <button type="submit">Ask</button>
+    </form>
+    <div class="footer"><a href="/demo.html">Open tool playground</a></div>
+  </div>
+  <script>
+    const chat = document.getElementById("chat");
+    const form = document.getElementById("form");
+    const input = document.getElementById("input");
+
+    function add(role, text) {
+      const el = document.createElement("div");
+      el.className = "msg " + role;
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    add("agent", "Hi — I'm DOC Watch on Alexa+. Ask about Rochester dock weather, freeze/flood risk, or how the mesh works. Sensors are MOCK-labeled tonight.");
+
+    function route(q) {
+      const s = q.toLowerCase();
+      if (s.includes("sensor") || s.includes("ring") || s.includes("humidity") || s.includes("motion")) {
+        return ["get_home_sensors", { location: "rochester" }];
+      }
+      if (s.includes("brief") || s.includes("sixty") || s.includes("60") || s.includes("spoken")) {
+        return ["get_spoken_briefing", { location: "rochester", seconds: 60 }];
+      }
+      if (s.includes("feature") || s.includes("mesh") || s.includes("flood sensor") || s.includes("join") || s.includes("how does")) {
+        return ["describe_features", { topic: s.includes("flood") ? "flood_sensor" : "all" }];
+      }
+      if (s.includes("watch") && (s.includes("alert") || s.includes("threshold") || s.includes("set"))) {
+        return ["set_watch", { location: "rochester", windMph: 25, freezeTempF: 36, flood: true }];
+      }
+      if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i")) {
+        return ["get_dock_advice", { location: "rochester", asset: s.includes("van") ? "van" : s.includes("boat") ? "boat" : "dock" }];
+      }
+      if (s.includes("alert") || s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12")) {
+        return ["get_alerts", { location: "rochester" }];
+      }
+      if (s.includes("forecast")) {
+        return ["get_forecast", { location: "rochester", hours: 24 }];
+      }
+      return ["get_current_conditions", { location: "rochester" }];
+    }
+
+    async function ask(q) {
+      add("user", q);
+      const [tool, body] = route(q);
+      add("agent", "Calling MCP tool " + tool + "…");
+      try {
+        const res = await fetch("/api/tools/" + tool, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        const human = (data.structuredContent && data.structuredContent.human) || data.human || JSON.stringify(data);
+        // Replace the "Calling…" bubble
+        chat.removeChild(chat.lastChild);
+        add("agent", human);
+      } catch (e) {
+        chat.removeChild(chat.lastChild);
+        add("agent", "Something went wrong: " + (e.message || e));
+      }
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (!q) return;
+      input.value = "";
+      ask(q);
+    });
+
+    document.querySelectorAll(".chips button").forEach((btn) => {
+      btn.addEventListener("click", () => ask(btn.getAttribute("data-q")));
+    });
+  </script>
+</body>
+</html>
