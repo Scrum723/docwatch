@@ -94,9 +94,13 @@ function cToF(c: number | null | undefined): number | null {
   return Math.round((c * 9) / 5 + 32);
 }
 
-function msToMph(ms: number | null | undefined): number | null {
-  if (ms == null || Number.isNaN(ms)) return null;
-  return Math.round(ms * 2.23694 * 10) / 10;
+/** Convert an NWS speed quantity to mph. NWS observations use km/h (wmoUnit:km_h-1). */
+export function speedToMph(q: { value?: number | null; unitCode?: string } | null | undefined): number | null {
+  const v = q?.value;
+  if (v == null || Number.isNaN(v)) return null;
+  const unit = q?.unitCode ?? "wmoUnit:km_h-1";
+  const factor = unit.includes("m_s-1") ? 2.23694 : unit.includes("mi_h-1") ? 1 : unit.includes("kn") ? 1.15078 : 0.621371;
+  return Math.round(v * factor * 10) / 10;
 }
 
 export async function getPoint(lat: number, lon: number): Promise<any> {
@@ -149,8 +153,8 @@ export async function getCurrentConditions(lat: number, lon: number): Promise<Nw
       temperatureF: cToF(p.temperature?.value),
       humidityPct:
         p.relativeHumidity?.value != null ? Math.round(p.relativeHumidity.value) : null,
-      windMph: msToMph(p.windSpeed?.value),
-      windGustMph: msToMph(p.windGust?.value),
+      windMph: speedToMph(p.windSpeed),
+      windGustMph: speedToMph(p.windGust),
       windDirection: p.windDirection?.value != null ? `${Math.round(p.windDirection.value)}°` : null,
       textDescription: p.textDescription ?? null,
       visibilityMiles:
