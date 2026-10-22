@@ -66,7 +66,18 @@ export function resolveLocation(input?: {
     if (raw.includes(loc.key) || loc.name.toLowerCase().includes(raw)) return loc;
   }
 
+  // Unknown place names fail loudly instead of silently returning another city's weather.
+  if (input?.city || input?.location) {
+    throw new UnknownLocationError(raw, Object.values(data.locations).map((l) => l.name));
+  }
   return data.locations[data.default] ?? data.locations.rochester;
+}
+
+export class UnknownLocationError extends Error {
+  constructor(public input: string, public known: string[]) {
+    super(`Unknown location "${input}". Supported: ${known.join("; ")}. Or pass lat and lon.`);
+    this.name = "UnknownLocationError";
+  }
 }
 
 export function listLocations(): LocationRecord[] {

@@ -31,7 +31,7 @@ export async function runGetCurrentConditions(args: {
 
   const human = conditions.error
     ? `Partial NWS data for ${loc.label}: ${conditions.textDescription ?? "n/a"}, ${conditions.temperatureF ?? "?"}°F. Warning: ${conditions.error}`
-    : `Current dock weather at ${loc.label}: ${conditions.textDescription ?? "conditions"}, ${conditions.temperatureF ?? "?"}°F, humidity ${conditions.humidityPct ?? "?"}%, wind ${conditions.windMph ?? "?"} mph (gust ${conditions.windGustMph ?? "n/a"}). Station ${conditions.station ?? "n/a"}.`;
+    : `Current dock weather at ${loc.label}: ${conditions.textDescription ?? "conditions"}, ${conditions.temperatureF ?? "?"}°F, humidity ${conditions.humidityPct ?? "?"}%, wind ${conditions.windMph ?? "?"} mph (gust ${conditions.windGustMph ?? "n/a"}). Source: NWS station ${conditions.station ?? "n/a"}, observed ${describeObsTime(conditions.observedAt)}.`;
 
   return toolResult({
     human,
@@ -41,4 +41,13 @@ export async function runGetCurrentConditions(args: {
       conditions,
     },
   });
+}
+
+export function describeObsTime(iso?: string): string {
+  if (!iso) return "at an unknown time";
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return "at an unknown time";
+  const ageMin = Math.round((Date.now() - t.getTime()) / 60000);
+  const local = t.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", month: "short", day: "numeric" }) + " ET";
+  return ageMin > 90 ? `${local} (about ${Math.round(ageMin / 60)} hours old, may be stale)` : local;
 }
