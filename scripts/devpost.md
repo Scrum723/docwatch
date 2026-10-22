@@ -56,6 +56,12 @@ Runnable one-command demo; real MCP + NWS calls; mock-safe sensors; English 3-mi
 Live Ring Partner OAuth, capital-backed mesh ingestion, AWS-hosted MCP endpoint (Builder credits), multi-node watches with push alerts — still voice-first on Alexa+.
 
 ## Links
-- Repo: `docwatch/` (publish to `https://github.com/Scrum723/docwatch`)
+- Repo: https://github.com/Scrum723/docwatch
 - License: MIT
+- Record checklist: `scripts/recording-checklist.md`
 - Demo script: `scripts/demo-script.md`
+- Friction / product feedback: `scripts/friction-log.md`, `scripts/product-feedback.md`
+
+## Demo video notes for judges
+- ≤3:00 English; MCP Streamable HTTP **2025-11-25**; eight tools; live NWS; **MOCK Ring** labeled
+- Primary track: **Alexa+** (AWS Builder + Open Source layered)

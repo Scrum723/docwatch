@@ -76,7 +76,8 @@ Public prior art references: `Scrum723/WFAD`, `Scrum723/SWAFT`; private DOC agen
 
 ## Demo script
 
-See `scripts/demo-script.md` (≤3 minutes). Recording notes: `scripts/record-demo.md`.
+**Record tonight:** start at `scripts/recording-checklist.md`.  
+Spoken lines: `scripts/demo-script.md` (≤3 minutes). Commands: `scripts/record-demo.md`.
 
 ## AWS Builder note
 
@@ -98,7 +99,7 @@ docwatch/
   src/services/{nws,grok,ring,advice,watch,locations}.ts
   src/prompts/{briefing,advice}.md
   web/{index,demo}.html
-  scripts/{demo-script,friction-log,product-feedback,devpost,record-demo}.md
+  scripts/{recording-checklist,demo-script,friction-log,product-feedback,devpost,record-demo}.md
   tests/
 ```
 
