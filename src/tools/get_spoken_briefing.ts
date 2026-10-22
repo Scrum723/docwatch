@@ -1,3 +1,4 @@
+import { describeObsTime } from "./get_current_conditions.js";
 import { z } from "zod";
 import { evaluateDockAdvice } from "../services/advice.js";
 import { enhanceBriefing } from "../services/grok.js";
@@ -21,6 +22,8 @@ function buildTemplate(args: {
   alertEvents: string[];
   actions: string[];
   risks: string[];
+  observed?: string;
+  nextPeriod?: string;
 }): string {
   const alertLine =
     args.alertEvents.length > 0
@@ -30,14 +33,17 @@ function buildTemplate(args: {
     args.risks.length > 0
       ? `DOC flags ${args.risks.join(", ")} over the next twelve hours.`
       : "DOC does not see elevated freeze, wind, or flood flags in the immediate window.";
-  const actionLine = `Three actions: ${args.actions.slice(0, 3).join("; ") || "stay weather-aware"}.`;
+  const acts = args.actions.slice(0, 3);
+  const actionLine = acts.length ? `Recommended actions: ${acts.join("; ")}.` : "No special actions needed; stay weather-aware.";
   return (
-    `DOC Watch sixty-second briefing for ${args.location}. ` +
-    `Right now it is ${args.desc ?? "mixed conditions"} around ${args.temp ?? "unknown"} degrees Fahrenheit. ` +
+    `Here is your DOC Watch briefing for ${args.location}, based on National Weather Service data. ` +
+    (args.temp != null
+      ? `The latest observation, ${args.observed ?? "time unknown"}, shows ${args.desc ?? "conditions"} at ${args.temp} degrees. `
+      : "Current observations are unavailable right now. ") +
+    (args.nextPeriod ? `Coming up: ${args.nextPeriod}. ` : "") +
     `${alertLine} ${riskLine} ` +
     `${actionLine} ` +
-    `This briefing is about ${args.seconds} seconds for voice playback on Alexa-plus. ` +
-    `Ring mesh nodes remain optional and mock-labeled until Partner OAuth ships on the roadmap.`
+    `Want the hourly forecast or alert details?`
   );
 }
 
@@ -59,7 +65,7 @@ export async function runGetSpokenBriefing(args: {
 
   if (conditions.error && forecast.error && alertsResp.error) {
     return toolError(
-      `Spoken briefing unavailable — NWS unreachable for ${loc.name}: ${conditions.error}`,
+      `Spoken briefing unavailable: NWS unreachable for ${loc.name}: ${conditions.error}`,
       { location: loc }
     );
   }
@@ -80,6 +86,10 @@ export async function runGetSpokenBriefing(args: {
     alertEvents: alertsResp.alerts.map((a) => a.event),
     actions: advice.actions,
     risks: advice.risks.map((r) => r.type),
+    observed: describeObsTime(conditions.observedAt),
+    nextPeriod: forecast.periods[0]
+      ? `${forecast.periods[0].shortForecast ?? ""}, ${forecast.periods[0].temperature ?? "?"} degrees, wind ${forecast.periods[0].windSpeed ?? "unknown"}`.replace(/^, /, "")
+      : undefined,
   });
 
   const payload = {
@@ -92,6 +102,11 @@ export async function runGetSpokenBriefing(args: {
       headline: a.headline,
     })),
     advice,
+    links: {
+      forecast: `https://forecast.weather.gov/MapClick.php?lat=${loc.lat}&lon=${loc.lon}`,
+      radar: "https://radar.weather.gov/",
+      alertsMap: "https://www.weather.gov/",
+    },
   };
 
   const briefing = await enhanceBriefing({

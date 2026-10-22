@@ -17,7 +17,7 @@ export function registerAllTools(server: McpServer): void {
         "Current dock/home weather from National Weather Service (api.weather.gov). Defaults to Rochester / North Greece / Long Pond.",
       inputSchema: getCurrentConditionsSchema,
     },
-    async (args) => runGetCurrentConditions(args)
+    async (args) => safe(() => runGetCurrentConditions(args))
   );
 
   server.registerTool(
@@ -26,7 +26,7 @@ export function registerAllTools(server: McpServer): void {
       description: "NWS forecast for a location (default 24 hours). Rochester defaults if unspecified.",
       inputSchema: getForecastSchema,
     },
-    async (args) => runGetForecast(args)
+    async (args) => safe(() => runGetForecast(args))
   );
 
   server.registerTool(
@@ -35,7 +35,7 @@ export function registerAllTools(server: McpServer): void {
       description: "Active NWS alerts for a location. Defaults to Rochester area.",
       inputSchema: getAlertsSchema,
     },
-    async (args) => runGetAlerts(args)
+    async (args) => safe(() => runGetAlerts(args))
   );
 
   server.registerTool(
@@ -45,7 +45,7 @@ export function registerAllTools(server: McpServer): void {
         "Should I pull the boat, cover the dock, or move the van? Freeze/wind/flood rules plus optional Grok narrative.",
       inputSchema: getDockAdviceSchema,
     },
-    async (args) => runGetDockAdvice(args)
+    async (args) => safe(() => runGetDockAdvice(args))
   );
 
   server.registerTool(
@@ -54,7 +54,7 @@ export function registerAllTools(server: McpServer): void {
       description: "Sixty-second spoken DOC Watch briefing for Alexa+ voice playback.",
       inputSchema: getSpokenBriefingSchema,
     },
-    async (args) => runGetSpokenBriefing(args)
+    async (args) => safe(() => runGetSpokenBriefing(args))
   );
 
   server.registerTool(
@@ -64,7 +64,7 @@ export function registerAllTools(server: McpServer): void {
         "Ring-style home/dock sensors. Default MOCK_RING=true with clearly labeled mock temp/humidity/flood/freeze/motion.",
       inputSchema: getHomeSensorsSchema,
     },
-    async (args) => runGetHomeSensors(args)
+    async (args) => safe(() => runGetHomeSensors(args))
   );
 
   server.registerTool(
@@ -74,7 +74,7 @@ export function registerAllTools(server: McpServer): void {
         "Watch a location and record wind/freeze/flood thresholds for in-session alerts.",
       inputSchema: setWatchSchema,
     },
-    async (args) => runSetWatch(args)
+    async (args) => safe(() => runSetWatch(args))
   );
 
   server.registerTool(
@@ -84,7 +84,7 @@ export function registerAllTools(server: McpServer): void {
         "Explain DOC Watch: mesh vision, flood/freeze sensors, how to join as a node, Alexa+ MCP usage.",
       inputSchema: describeFeaturesSchema,
     },
-    async (args) => runDescribeFeatures(args)
+    async (args) => safe(() => runDescribeFeatures(args))
   );
 }
 
@@ -98,3 +98,14 @@ export const TOOL_NAMES = [
   "set_watch",
   "describe_features",
 ] as const;
+
+/** Convert thrown errors into clean MCP tool errors with a structured log line. */
+async function safe<T>(fn: () => Promise<T> | T): Promise<any> {
+  try {
+    return await fn();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(JSON.stringify({ level: "error", event: "tool_error", message, ts: new Date().toISOString() }));
+    return { isError: true, content: [{ type: "text", text: `DOC Watch could not complete that request. ${message}` }] };
+  }
+}

@@ -1,14 +1,17 @@
 {
   "name": "docwatch",
   "version": "1.0.0",
-  "description": "DOC Watch — Decentralized Operational Center weather intelligence as Alexa+ Agent Skills via MCP Streamable HTTP",
+  "description": "DOC Watch: Decentralized Operational Center weather intelligence as Alexa+ Agent Skills via MCP Streamable HTTP",
   "type": "module",
   "main": "src/server.ts",
   "scripts": {
     "dev": "tsx src/server.ts",
     "start": "tsx src/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "smoke": "node scripts/mcp-smoke.mjs",
+    "check": "npm run typecheck && npm test"
   },
   "keywords": [
     "mcp",
