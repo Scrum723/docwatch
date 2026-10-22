@@ -1,7 +1,7 @@
 # RECORD NOW — DOC Watch demo checklist
 
 **Deadline context:** Record ≤3:00 English video for amazonappdev2026 (Alexa+ primary).  
-**Repo tip:** `d919309` · **Local server:** already on `http://127.0.0.1:8787` (`npm run dev`).
+**Repo tip:** `afdabb0` · **Local server:** already on `http://127.0.0.1:8787` (`npm run dev`).
 
 ---
 
@@ -15,7 +15,8 @@
 - [ ] Mic check; speak English; timer visible or phone timer to 2:55
 
 **Tonight’s live NWS snapshot (Rochester) — expect this shape, numbers can drift:**
-- Conditions: Clear ~37°F, wind elevated (~29 mph) → dock advice will mention **wind**
+- Conditions: Clear ~37°F, light wind (~8 mph) — quiet night is still a strong demo
+- Dock advice: may say **no elevated freeze/wind/flood flags** + stay weather-aware (rules still shown in your spoken line)
 - Alerts: often **none** (say “quiet on alerts” — that is valid NWS)
 - Sensors: **[MOCK MODE]** must stay on screen
 

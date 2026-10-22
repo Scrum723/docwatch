@@ -33,7 +33,7 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 **Say:**  
 “What’s the dock weather in Rochester right now? Live National Weather Service — no API key. Any freeze, flood, or severe risk?”
 
-*(If wind is elevated and alerts are empty, that is real NWS — call both out.)*
+*(Quiet alerts or “no elevated flags” is real NWS — call the calm night out; still name the freeze / wind / flood rules.)*
 
 ---
 
