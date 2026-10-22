@@ -39,6 +39,19 @@ Tests:
 npm test
 ```
 
+## Quick setup
+
+```bash
+git clone https://github.com/Scrum723/docwatch && cd docwatch
+npm install
+cp .env.example .env   # optional; runs with zero keys
+npm start              # http://127.0.0.1:8787 (MCP at POST /mcp)
+npm run smoke          # initialize + tools/list against the running server
+npm run check          # typecheck + tests
+```
+
+Supported named locations: Rochester, Fairport, Long Pond (Greece), Buffalo, Sodus Point. Any other place can be queried with `lat` and `lon`; unknown names return a clear tool error rather than another city's weather. Every reading cites the NWS station and observation time, and flags observations older than 90 minutes as possibly stale.
+
 ## MCP tools (all eight)
 
 | Tool | Purpose |
