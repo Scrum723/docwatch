@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DOC Watch — Local Playground</title>
+  <title>DOC Watch: Local Playground</title>
   <style>
     :root {
       --bg: #0b1220;
@@ -95,8 +95,8 @@
 <body>
   <header>
     <div>
-      <h1><span>DOC</span> Watch — playground</h1>
-      <div class="badge" id="mockBadge">MOCK_RING mode — not live Ring mesh</div>
+      <h1><span>DOC</span> Watch: playground</h1>
+      <div class="badge" id="mockBadge">MOCK_RING mode: not live Ring mesh</div>
     </div>
     <div>
       <a href="/index.html">Alexa+ sim →</a>
@@ -218,7 +218,7 @@
 
     fetch("/health").then(r => r.json()).then(h => {
       document.getElementById("mockBadge").textContent = h.mockRing
-        ? "MOCK_RING=true — sensors are labeled mock"
+        ? "MOCK_RING=true: sensors are labeled mock"
         : "MOCK_RING=false";
     }).catch(() => {});
   </script>

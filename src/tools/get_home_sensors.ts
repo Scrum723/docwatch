@@ -17,7 +17,7 @@ export async function runGetHomeSensors(args: {
   lon?: number;
 }) {
   const loc = resolveLocation(args);
-  // Ring optional Partner API / mock — see services/ring.ts
+  // Ring optional Partner API / mock: see services/ring.ts
   const sensors = await getHomeSensors(loc.label);
 
   return toolResult({
