@@ -32,7 +32,22 @@ describe("evaluateDockAdvice (shipped rules)", () => {
       expect.arrayContaining(["pull small craft", "cover dock", "add lines", "watch freeze"])
     );
     expect(result.human).toMatch(/freeze/i);
-    expect(result.summary).toBeTruthy();
+    expect(result.human).toMatch(/suggested next steps/i);
+    expect(result.summary).toMatch(/freeze/i);
+  });
+
+  it("uses quiet conversational copy when no elevated risks", () => {
+    const result = evaluateDockAdvice({
+      locationName: "Rochester / Long Pond",
+      asset: "dock",
+      conditions: conditions({ temperatureF: 52, windGustMph: 10 }),
+      forecast: forecast([]),
+      alerts: [],
+    });
+    expect(result.risks).toHaveLength(0);
+    expect(result.human).toMatch(/look quiet/i);
+    expect(result.human).toMatch(/national weather service/i);
+    expect(result.human).not.toMatch(/[\u2013\u2014]/);
   });
 
   it("flags wind when gusts ≥ 25 mph and moves van from trees", () => {

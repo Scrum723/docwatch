@@ -50,7 +50,9 @@ npm run smoke          # initialize + tools/list against the running server
 npm run check          # typecheck + tests
 ```
 
-Supported named locations: Rochester, Fairport, Long Pond (Greece), Buffalo, Sodus Point. Any other place can be queried with `lat` and `lon`; unknown names return a clear tool error rather than another city's weather. Every reading cites the NWS station and observation time, and flags observations older than 90 minutes as possibly stale.
+Supported named locations: Rochester, Fairport, Long Pond (Greece), Buffalo, Sodus Point (playground dropdown + Alexa+ sim chips cover these). Any other place can be queried with `lat` and `lon`; unknown names return a clear tool error rather than another city's weather. Every reading cites the NWS station and observation time, and flags observations older than 90 minutes as possibly stale.
+
+Spoken briefings and dock advice use calm plain English templates by default. Set `XAI_API_KEY` to enhance narration with Grok; output is sanitized (no markdown, URLs, or typographic dashes) for Alexa+ playback.
 
 ## MCP tools (all eight)
 
@@ -105,14 +107,14 @@ docwatch/
   README.md
   LICENSE
   package.json
-  env.example
+  .env.example / env.example # same contents; copy either to .env
   data/locations.json
   src/server.ts              # MCP Streamable HTTP + web
   src/tools/*.ts             # eight tools
-  src/services/{nws,grok,ring,advice,watch,locations}.ts
+  src/services/{nws,grok,ring,advice,watch,locations,spoken}.ts
   src/prompts/{briefing,advice}.md
   web/{index,demo}.html
-  scripts/{recording-checklist,demo-script,friction-log,product-feedback,devpost,record-demo}.md
+  scripts/{recording-checklist,demo-script,friction-log,product-feedback,devpost,record-demo,mcp-smoke}.md|.mjs
   tests/
 ```
 

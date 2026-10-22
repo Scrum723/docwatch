@@ -7,6 +7,7 @@
 
 import type { NwsAlert, NwsConditions, NwsForecast } from "./nws.js";
 import { parseWindGustMph } from "./nws.js";
+import { buildAdviceHuman } from "./spoken.js";
 
 export type Asset = "dock" | "boat" | "van" | "home";
 
@@ -179,12 +180,19 @@ export function evaluateDockAdvice(input: {
 
   // Cap to a clear action list
   const actionList = [...actions].slice(0, 5);
-  const riskLabels = deduped.length
+  const hasElevated = deduped.length > 0;
+  const riskLabels = hasElevated
     ? deduped.map((r) => `${r.type} (${r.level})`).join(", ")
     : "no elevated freeze/wind/flood flags";
 
   const summary = `DOC Watch ${input.asset} advice for ${input.locationName}: ${riskLabels}. Actions: ${actionList.join("; ")}.`;
-  const human = summary;
+  const human = buildAdviceHuman({
+    locationName: input.locationName,
+    asset: input.asset,
+    riskLabels,
+    hasElevated,
+    actions: actionList,
+  });
 
   return {
     locationName: input.locationName,

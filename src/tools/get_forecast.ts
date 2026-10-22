@@ -31,7 +31,7 @@ export async function runGetForecast(args: {
 
   const first = forecast.periods[0];
   const human = first
-    ? `${hours}h forecast for ${loc.label}: starting ${first.shortForecast}, ${first.temperature}°${first.temperatureUnit}, wind ${first.windSpeed}. ${forecast.periods.length} periods from api.weather.gov.`
+    ? `Over the next ${hours} hours at ${loc.label}, it starts ${first.shortForecast}, around ${first.temperature}°${first.temperatureUnit}, wind ${first.windSpeed}. That is ${forecast.periods.length} National Weather Service periods.`
     : `No forecast periods returned for ${loc.label}.${forecast.error ? ` ${forecast.error}` : ""}`;
 
   return toolResult({

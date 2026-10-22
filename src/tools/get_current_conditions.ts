@@ -30,8 +30,8 @@ export async function runGetCurrentConditions(args: {
   }
 
   const human = conditions.error
-    ? `Partial NWS data for ${loc.label}: ${conditions.textDescription ?? "n/a"}, ${conditions.temperatureF ?? "?"}°F. Warning: ${conditions.error}`
-    : `Current dock weather at ${loc.label}: ${conditions.textDescription ?? "conditions"}, ${conditions.temperatureF ?? "?"}°F, humidity ${conditions.humidityPct ?? "?"}%, wind ${conditions.windMph ?? "?"} mph (gust ${conditions.windGustMph ?? "n/a"}). Source: NWS station ${conditions.station ?? "n/a"}, observed ${describeObsTime(conditions.observedAt)}.`;
+    ? `I only got partial National Weather Service data for ${loc.label}: ${conditions.textDescription ?? "n/a"}, ${conditions.temperatureF ?? "?"}°F. Warning: ${conditions.error}`
+    : `Right now at ${loc.label} it is ${conditions.textDescription ?? "mixed"}, about ${conditions.temperatureF ?? "?"}°F, humidity ${conditions.humidityPct ?? "?"}%, wind ${conditions.windMph ?? "?"} mph (gust ${conditions.windGustMph ?? "n/a"}). That comes from NWS station ${conditions.station ?? "n/a"}, observed ${describeObsTime(conditions.observedAt)}.`;
 
   return toolResult({
     human,

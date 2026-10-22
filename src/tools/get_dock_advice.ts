@@ -54,8 +54,12 @@ export async function runGetDockAdvice(args: {
     template: advice.human,
   });
 
+  // Prefer Grok narrative when present; otherwise the conversational template.
+  // Always keep structured actions in JSON for clients.
   const human = enhanced.enhanced
-    ? `${enhanced.text} Actions: ${advice.actions.join("; ")}.`
+    ? /suggested next steps|actions?:/i.test(enhanced.text)
+      ? enhanced.text
+      : `${enhanced.text} Suggested next steps: ${advice.actions.join("; ")}.`
     : advice.human;
 
   return toolResult({

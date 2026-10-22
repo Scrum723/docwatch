@@ -115,6 +115,7 @@
       <button type="button" data-q="Any freeze or flood risk in the next twelve hours?">12h risk</button>
       <button type="button" data-q="Should I pull the boat?">Pull the boat?</button>
       <button type="button" data-q="Give me a sixty-second briefing.">60s briefing</button>
+      <button type="button" data-q="What's the forecast for Buffalo tonight?">Buffalo forecast</button>
       <button type="button" data-q="Show my home sensors.">Home sensors</button>
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
@@ -137,38 +138,55 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    add("agent", "Hi: I'm DOC Watch on Alexa+. Ask about Rochester dock weather, freeze/flood risk, or how the mesh works. Sensors are MOCK-labeled tonight.");
+    let lastLocation = "rochester";
+
+    add("agent", "Hi. I'm DOC Watch on Alexa+. Ask about dock weather in Rochester, Buffalo, Fairport, or Sodus Point, freeze or flood risk, or how the mesh works. Sensors are MOCK-labeled tonight.");
+
+    function pickLocation(s) {
+      if (/\bbuffalo\b|\bbflo\b|\blake erie\b/.test(s)) return "buffalo";
+      if (/\bfairport\b/.test(s)) return "fairport";
+      if (/\bsodus\b/.test(s)) return "sodus";
+      if (/\blong pond\b|\bgreece\b/.test(s)) return "long_pond";
+      if (/\brochester\b|\bnorth greece\b|\broc\b/.test(s)) return "rochester";
+      return lastLocation;
+    }
 
     function route(q) {
       const s = q.toLowerCase();
+      const location = pickLocation(s);
+      lastLocation = location;
       if (s.includes("sensor") || s.includes("ring") || s.includes("humidity") || s.includes("motion")) {
-        return ["get_home_sensors", { location: "rochester" }];
+        return ["get_home_sensors", { location }];
       }
       if (s.includes("brief") || s.includes("sixty") || s.includes("60") || s.includes("spoken")) {
-        return ["get_spoken_briefing", { location: "rochester", seconds: 60 }];
+        return ["get_spoken_briefing", { location, seconds: 60 }];
       }
       if (s.includes("feature") || s.includes("mesh") || s.includes("flood sensor") || s.includes("join") || s.includes("how does")) {
         return ["describe_features", { topic: s.includes("flood") ? "flood_sensor" : "all" }];
       }
       if (s.includes("watch") && (s.includes("alert") || s.includes("threshold") || s.includes("set"))) {
-        return ["set_watch", { location: "rochester", windMph: 25, freezeTempF: 36, flood: true }];
+        return ["set_watch", { location, windMph: 25, freezeTempF: 36, flood: true }];
       }
       if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i")) {
-        return ["get_dock_advice", { location: "rochester", asset: s.includes("van") ? "van" : s.includes("boat") ? "boat" : "dock" }];
+        return ["get_dock_advice", { location, asset: s.includes("van") ? "van" : s.includes("boat") ? "boat" : "dock" }];
       }
-      if (s.includes("alert") || s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12")) {
-        return ["get_alerts", { location: "rochester" }];
+      // Risk questions: dock advice already folds alerts + freeze/wind/flood rules.
+      if (s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12h") || /\b12\b/.test(s)) {
+        return ["get_dock_advice", { location, asset: "dock" }];
       }
-      if (s.includes("forecast")) {
-        return ["get_forecast", { location: "rochester", hours: 24 }];
+      if (s.includes("alert")) {
+        return ["get_alerts", { location }];
       }
-      return ["get_current_conditions", { location: "rochester" }];
+      if (s.includes("forecast") || s.includes("tonight") || s.includes("tomorrow") || s.includes("hourly")) {
+        return ["get_forecast", { location, hours: 24 }];
+      }
+      return ["get_current_conditions", { location }];
     }
 
     async function ask(q) {
       add("user", q);
       const [tool, body] = route(q);
-      add("agent", "Calling MCP tool " + tool + "…");
+      add("agent", "One moment while I check National Weather Service…");
       try {
         const res = await fetch("/api/tools/" + tool, {
           method: "POST",
@@ -177,7 +195,6 @@
         });
         const data = await res.json();
         const human = (data.structuredContent && data.structuredContent.human) || data.human || JSON.stringify(data);
-        // Replace the "Calling…" bubble
         chat.removeChild(chat.lastChild);
         add("agent", human);
       } catch (e) {

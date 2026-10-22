@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sanitizeSpokenText } from "./spoken.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -70,8 +71,8 @@ export async function enhanceBriefing(args: {
     .replace("{location}", args.location);
   const user = `Structured weather JSON:\n${JSON.stringify(args.payload, null, 2)}\n\nWrite the spoken briefing now.`;
   const enhanced = await grokComplete(system, user);
-  if (enhanced) return { text: enhanced, enhanced: true };
-  return { text: args.template, enhanced: false };
+  if (enhanced) return { text: sanitizeSpokenText(enhanced), enhanced: true };
+  return { text: sanitizeSpokenText(args.template), enhanced: false };
 }
 
 export async function enhanceAdvice(args: {
@@ -85,6 +86,6 @@ export async function enhanceAdvice(args: {
     .replace("{asset}", args.asset);
   const user = `Structured risk JSON:\n${JSON.stringify(args.payload, null, 2)}\n\nWrite the short advice now.`;
   const enhanced = await grokComplete(system, user);
-  if (enhanced) return { text: enhanced, enhanced: true };
-  return { text: args.template, enhanced: false };
+  if (enhanced) return { text: sanitizeSpokenText(enhanced), enhanced: true };
+  return { text: sanitizeSpokenText(args.template), enhanced: false };
 }

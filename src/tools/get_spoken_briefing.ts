@@ -4,6 +4,7 @@ import { evaluateDockAdvice } from "../services/advice.js";
 import { enhanceBriefing } from "../services/grok.js";
 import { resolveLocation } from "../services/locations.js";
 import { getAlerts, getCurrentConditions, getForecast } from "../services/nws.js";
+import { buildSpokenBriefingTemplate } from "../services/spoken.js";
 import { toolError, toolResult } from "./types.js";
 
 export const getSpokenBriefingSchema = {
@@ -13,39 +14,6 @@ export const getSpokenBriefingSchema = {
   lon: z.number().optional(),
   seconds: z.number().optional().describe("Target spoken length; default 60"),
 };
-
-function buildTemplate(args: {
-  location: string;
-  seconds: number;
-  temp: number | null;
-  desc: string | null;
-  alertEvents: string[];
-  actions: string[];
-  risks: string[];
-  observed?: string;
-  nextPeriod?: string;
-}): string {
-  const alertLine =
-    args.alertEvents.length > 0
-      ? `Active alerts include ${args.alertEvents.slice(0, 3).join(", ")}.`
-      : "There are no active National Weather Service alerts at this location right now.";
-  const riskLine =
-    args.risks.length > 0
-      ? `DOC flags ${args.risks.join(", ")} over the next twelve hours.`
-      : "DOC does not see elevated freeze, wind, or flood flags in the immediate window.";
-  const acts = args.actions.slice(0, 3);
-  const actionLine = acts.length ? `Recommended actions: ${acts.join("; ")}.` : "No special actions needed; stay weather-aware.";
-  return (
-    `Here is your DOC Watch briefing for ${args.location}, based on National Weather Service data. ` +
-    (args.temp != null
-      ? `The latest observation, ${args.observed ?? "time unknown"}, shows ${args.desc ?? "conditions"} at ${args.temp} degrees. `
-      : "Current observations are unavailable right now. ") +
-    (args.nextPeriod ? `Coming up: ${args.nextPeriod}. ` : "") +
-    `${alertLine} ${riskLine} ` +
-    `${actionLine} ` +
-    `Want the hourly forecast or alert details?`
-  );
-}
 
 export async function runGetSpokenBriefing(args: {
   city?: string;
@@ -78,17 +46,20 @@ export async function runGetSpokenBriefing(args: {
     alerts: alertsResp.alerts,
   });
 
-  const template = buildTemplate({
+  const template = buildSpokenBriefingTemplate({
     location: loc.label,
-    seconds,
     temp: conditions.temperatureF,
     desc: conditions.textDescription ?? null,
     alertEvents: alertsResp.alerts.map((a) => a.event),
     actions: advice.actions,
-    risks: advice.risks.map((r) => r.type),
+    risks: [...new Set(advice.risks.map((r) => r.type))],
     observed: describeObsTime(conditions.observedAt),
+    station: conditions.station ?? null,
     nextPeriod: forecast.periods[0]
-      ? `${forecast.periods[0].shortForecast ?? ""}, ${forecast.periods[0].temperature ?? "?"} degrees, wind ${forecast.periods[0].windSpeed ?? "unknown"}`.replace(/^, /, "")
+      ? `${forecast.periods[0].name || "the next period"} looks ${forecast.periods[0].shortForecast ?? "mixed"}, around ${forecast.periods[0].temperature ?? "?"} degrees with wind ${forecast.periods[0].windSpeed ?? "unknown"}`.replace(
+          /\s+/g,
+          " "
+        )
       : undefined,
   });
 

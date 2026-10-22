@@ -65,3 +65,5 @@ Live Ring Partner OAuth, capital-backed mesh ingestion, AWS-hosted MCP endpoint 
 ## Demo video notes for judges
 - ≤3:00 English; MCP Streamable HTTP **2025-11-25**; eight tools; live NWS; **MOCK Ring** labeled
 - Primary track: **Alexa+** (AWS Builder + Open Source layered)
+- Zero keys required: templated spoken briefing + mock sensors; optional `XAI_API_KEY` for Grok
+- Playground + Alexa+ sim: http://127.0.0.1:8787/demo.html and `/index.html` after `npm start`
