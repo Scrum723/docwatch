@@ -1,7 +1,7 @@
 # RECORD NOW — DOC Watch demo checklist
 
 **Deadline context:** Record ≤3:00 English video for amazonappdev2026 (Alexa+ primary).  
-**Repo tip:** `afdabb0` · **Local server:** already on `http://127.0.0.1:8787` (`npm run dev`).
+**Repo tip:** `36740e7` · **Local server:** `cd docwatch && npm run dev` → `http://127.0.0.1:8787`.
 
 ---
 
