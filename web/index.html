@@ -153,11 +153,15 @@
       <button type="button" id="voiceBtn" aria-pressed="false" title="Local stand-in for Alexa+ voice turn">🎙 Alexa+ voice (sim)</button>
       <button type="button" id="speakLastBtn" title="Speak the last DOC reply" style="background:#1c2433;color:var(--text)">🔊 Speak reply</button>
     </div>
+    <label class="voice-hint" style="display:flex;flex-direction:column;align-items:stretch;gap:0.35rem;text-align:left">
+      <span style="text-align:center">Alexa-like voice</span>
+      <select id="voiceSelect" style="width:100%;background:#1c2433;color:var(--text);border:1px solid #2a3344;border-radius:10px;padding:0.45rem 0.6rem"></select>
+    </label>
     <label class="voice-hint" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;cursor:pointer">
       <input type="checkbox" id="speakToggle" checked />
       Speak replies (simulates Alexa+ voice out)
     </label>
-    <div class="voice-hint" id="voiceHint">Product v2v is Alexa+ → MCP. This button is a local sim when an Alexa+ device session is not linked.</div>
+    <div class="voice-hint" id="voiceHint">Product v2v is Alexa+. This mic is a local sim — tap once, speak, wait for the reply.</div>
     <form class="composer" id="form">
       <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
       <button type="submit">Ask</button>
@@ -171,6 +175,7 @@
     const voiceBtn = document.getElementById("voiceBtn");
     const speakLastBtn = document.getElementById("speakLastBtn");
     const speakToggle = document.getElementById("speakToggle");
+    const voiceSelect = document.getElementById("voiceSelect");
     const voiceHint = document.getElementById("voiceHint");
     const orb = document.getElementById("orb");
 
@@ -184,14 +189,9 @@
 
     let lastLocation = "rochester";
     let voiceBusy = false;
+    let isListening = false;
     let lastAgentReply = "";
-    let sttNetworkRetries = 0;
-
-    // Chrome often needs voices warmed before first speak.
-    if (window.speechSynthesis) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
+    let preferredVoiceURI = localStorage.getItem("docwatch_voice_uri") || "";
 
     add("agent", "Hi. I'm DOC Watch for Alexa+. Real voice-to-voice runs through Alexa-plus calling these MCP tools. This page simulates that loop locally. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
     lastAgentReply = chat.querySelector(".agent") ? chat.querySelector(".agent").textContent : "";
@@ -244,6 +244,69 @@
       return ["get_current_conditions", { location }];
     }
 
+    function scoreVoice(v) {
+      const n = v.name || "";
+      const lang = v.lang || "";
+      if (!/^en(-|_)/i.test(lang)) return -1000;
+      let score = 10;
+      // Prefer neural / natural female voices (Alexa-like).
+      if (/aria|jenny|michelle|natasha|samantha|zira|susan|hazel|eva|sonia/i.test(n)) score += 80;
+      if (/natural|neural|online/i.test(n)) score += 60;
+      if (/google us english/i.test(n)) score += 50;
+      if (/female/i.test(n)) score += 30;
+      if (/microsoft/i.test(n)) score += 15;
+      // Avoid classic robotic desktop / male defaults.
+      if (/david|mark|george|ravi|desktop|espeak|microsoft david/i.test(n)) score -= 80;
+      if (/male/i.test(n) && !/female/i.test(n)) score -= 20;
+      return score;
+    }
+
+    function listEnVoices() {
+      if (!window.speechSynthesis) return [];
+      return window.speechSynthesis.getVoices()
+        .filter((v) => /^en(-|_)/i.test(v.lang || ""))
+        .slice()
+        .sort((a, b) => scoreVoice(b) - scoreVoice(a));
+    }
+
+    function selectedVoice() {
+      const voices = listEnVoices();
+      if (!voices.length) return null;
+      if (preferredVoiceURI) {
+        const match = voices.find((v) => v.voiceURI === preferredVoiceURI);
+        // Ignore cached robotic voices from older sessions.
+        if (match && scoreVoice(match) >= 40) return match;
+      }
+      return voices[0];
+    }
+
+    function fillVoiceSelect() {
+      if (!voiceSelect) return;
+      const voices = listEnVoices();
+      const prev = preferredVoiceURI || (voices[0] && voices[0].voiceURI) || "";
+      voiceSelect.innerHTML = "";
+      if (!voices.length) {
+        const opt = document.createElement("option");
+        opt.textContent = "No English voices found yet — reload page";
+        voiceSelect.appendChild(opt);
+        return;
+      }
+      for (const v of voices) {
+        const opt = document.createElement("option");
+        opt.value = v.voiceURI;
+        opt.textContent = v.name + " (" + v.lang + ")" + (scoreVoice(v) >= 50 ? " ★" : "");
+        voiceSelect.appendChild(opt);
+      }
+      if (prev && [...voiceSelect.options].some((o) => o.value === prev)) {
+        voiceSelect.value = prev;
+        preferredVoiceURI = prev;
+      } else {
+        preferredVoiceURI = voices[0].voiceURI;
+        voiceSelect.value = preferredVoiceURI;
+        localStorage.setItem("docwatch_voice_uri", preferredVoiceURI);
+      }
+    }
+
     function speak(text) {
       return new Promise((resolve) => {
         if (!window.speechSynthesis) {
@@ -255,18 +318,45 @@
           .replace(/https?:\/\/\S+/gi, "")
           .replace(/\s+/g, " ")
           .trim()
-          .slice(0, 1200);
+          .slice(0, 1400);
+        if (!clean) {
+          resolve();
+          return;
+        }
         const u = new SpeechSynthesisUtterance(clean);
         u.lang = "en-US";
-        u.rate = 1.02;
-        const voices = window.speechSynthesis.getVoices();
-        const en = voices.find((v) => /^en(-|_)/i.test(v.lang) && /Google|Microsoft|Natural/i.test(v.name))
-          || voices.find((v) => /^en(-|_)/i.test(v.lang));
-        if (en) u.voice = en;
-        u.onend = () => resolve();
-        u.onerror = () => resolve();
-        // Brief delay helps Chrome actually start audio after mic use.
-        setTimeout(() => window.speechSynthesis.speak(u), 60);
+        // Alexa-like pacing: calm, slightly warm.
+        u.rate = 0.96;
+        u.pitch = 1.05;
+        u.volume = 1;
+        const voice = selectedVoice();
+        if (voice) {
+          u.voice = voice;
+          u.lang = voice.lang || "en-US";
+        }
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          clearInterval(keepAlive);
+          resolve();
+        };
+        u.onend = done;
+        u.onerror = done;
+        // Chrome bug: synthesis can freeze unless periodically resumed.
+        const keepAlive = setInterval(() => {
+          try {
+            if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
+          } catch (_) {}
+        }, 4000);
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.speak(u);
+            window.speechSynthesis.resume();
+          } catch (_) {
+            done();
+          }
+        }, 120);
       });
     }
 
@@ -280,7 +370,8 @@
       const speakReply = shouldSpeak(opts);
       add("user", q);
       const [tool, body] = route(q);
-      add("agent", "One moment while I check National Weather Service…");
+      // Silent wait bubble — do not speak the filler (that sounded robotic).
+      add("agent", "One moment…");
       try {
         const res = await fetch("/api/tools/" + tool, {
           method: "POST",
@@ -305,156 +396,139 @@
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null;
 
     function setListening(on) {
+      isListening = on;
       voiceBtn.classList.toggle("listening", on);
       orb.classList.toggle("listening", on);
       voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
       voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Alexa+ voice (sim)";
-      if (on) {
-        voiceHint.textContent = "Sim listening (stand-in for Alexa+). Speak your question clearly.";
-      }
-    }
-
-    function stopListening() {
-      try { if (recognition) recognition.abort(); } catch (_) {}
-      setListening(false);
     }
 
     function sttErrorMessage(code) {
       if (code === "not-allowed") {
-        return "Microphone blocked. Click the lock icon in the address bar → allow Microphone for 127.0.0.1, then reload.";
+        return "Microphone blocked. Allow mic for 127.0.0.1, then reload.";
       }
       if (code === "network") {
-        return "Local sim mic STT needs internet. Product v2v is Alexa+ → MCP (not this browser). Use chips/type with Speak replies ON, or Speak reply.";
+        return "Browser mic STT is offline (cloud). Product v2v is Alexa+. Use chips + Speak replies, or Speak reply.";
       }
       if (code === "no-speech") {
-        return "No speech heard. Tap Voice to voice and speak closer to the mic.";
+        return "No speech heard. Tap Alexa+ voice once, then speak.";
       }
       if (code === "audio-capture") {
-        return "No microphone found. Plug in a mic or check Windows sound settings.";
+        return "No microphone found. Check Windows sound settings.";
       }
-      if (code === "aborted") {
-        return "Listening stopped.";
-      }
-      return "Sim mic error: " + (code || "unknown") + ". Product path is Alexa+. Use chips/type with Speak replies ON.";
+      if (code === "aborted") return "Listening stopped.";
+      return "Mic sim error: " + (code || "unknown") + ". Use chips + Speak replies (Alexa+ is the real v2v path).";
     }
 
-    function startListening() {
-      if (!recognition || voiceBusy) return;
-      if (!navigator.onLine) {
-        voiceHint.textContent = sttErrorMessage("network");
-        speakToggle.checked = true;
-        input.focus();
-        return;
-      }
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      try {
-        recognition.start();
-      } catch (_) {
-        try {
-          recognition.abort();
-          setTimeout(() => {
-            try { recognition.start(); } catch (e2) {
-              voiceHint.textContent = "Could not start mic. Reload the page and try again.";
-            }
-          }, 200);
-        } catch (e3) {
-          voiceHint.textContent = "Could not start mic. Reload the page and try again.";
-        }
-      }
+    function makeRecognizer() {
+      if (!SpeechRecognition) return null;
+      const rec = new SpeechRecognition();
+      rec.lang = "en-US";
+      rec.interimResults = false; // prevents UI thrash / "spaz"
+      rec.maxAlternatives = 1;
+      rec.continuous = false;
+      return rec;
+    }
+
+    function stopListening(rec) {
+      try { if (rec) rec.onresult = null; } catch (_) {}
+      try { if (rec) rec.onerror = null; } catch (_) {}
+      try { if (rec) rec.onend = null; } catch (_) {}
+      try { if (rec) rec.abort(); } catch (_) {}
+      setListening(false);
     }
 
     if (!SpeechRecognition) {
       voiceBtn.disabled = true;
-      voiceHint.textContent = "Mic STT needs Chrome or Edge. Use chips/type with Always speak replies ON.";
+      voiceHint.textContent = "Mic STT needs Chrome or Edge. Use chips/type with Speak replies ON.";
     } else {
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-      recognition.continuous = false;
-
-      recognition.onstart = () => {
-        sttNetworkRetries = 0;
-        setListening(true);
-      };
-      recognition.onend = () => {
-        if (!voiceBusy) setListening(false);
-      };
-      recognition.onerror = (ev) => {
-        const code = ev.error || "unknown";
-        // Ignore benign aborted errors from stop/abort.
-        if (code === "aborted") {
-          setListening(false);
-          return;
-        }
-        // One automatic retry for flaky cloud STT network blips.
-        if (code === "network" && sttNetworkRetries < 1 && navigator.onLine) {
-          sttNetworkRetries += 1;
-          voiceHint.textContent = "Speech service blip — retrying once…";
-          setListening(false);
-          setTimeout(() => startListening(), 450);
-          return;
-        }
-        setListening(false);
-        voiceBusy = false;
-        voiceBtn.disabled = false;
-        const msg = sttErrorMessage(code);
-        voiceHint.textContent = msg;
-        if (code === "network" || code === "not-allowed") {
-          speakToggle.checked = true;
-          input.focus();
-        }
-        // Do not flood the chat transcript with repeated STT errors.
-      };
-
-      let finalTranscript = "";
-      recognition.onresult = async (ev) => {
-        let interim = "";
-        for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          const piece = ev.results[i][0].transcript;
-          if (ev.results[i].isFinal) finalTranscript += piece;
-          else interim += piece;
-        }
-        const live = (finalTranscript || interim).trim();
-        if (live) {
-          input.value = live;
-          voiceHint.textContent = interim ? ("Hearing: " + interim) : ("Got: " + finalTranscript);
-        }
-        if (!ev.results[ev.results.length - 1].isFinal) return;
-
-        const transcript = finalTranscript.trim();
-        finalTranscript = "";
-        setListening(false);
-        if (!transcript) {
-          voiceHint.textContent = "Did not catch that. Tap Voice to voice and try again.";
-          return;
-        }
-        voiceBusy = true;
-        voiceBtn.disabled = true;
-        voiceHint.textContent = "Heard you. Checking NWS, then speaking the reply…";
-        input.value = transcript;
-        try {
-          await ask(transcript, { speak: true });
-          voiceHint.textContent = "Done. Tap Voice to voice for another turn.";
-        } finally {
-          voiceBusy = false;
-          voiceBtn.disabled = false;
-          setListening(false);
-        }
-      };
-
       voiceBtn.addEventListener("click", () => {
         if (voiceBusy) return;
-        if (voiceBtn.classList.contains("listening")) {
-          stopListening();
-          voiceHint.textContent = "Listening stopped. Type below or tap Voice to voice again.";
+
+        // Toggle off if already listening — no retry loops.
+        if (isListening) {
+          setListening(false);
+          voiceHint.textContent = "Listening stopped. Tap again when ready, or use chips.";
           return;
         }
-        finalTranscript = "";
-        startListening();
+
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+        const rec = makeRecognizer();
+        if (!rec) return;
+
+        let handled = false;
+
+        rec.onstart = () => {
+          setListening(true);
+          voiceHint.textContent = "Listening… ask your question, then pause.";
+        };
+
+        rec.onerror = (ev) => {
+          const code = ev.error || "unknown";
+          if (code === "aborted") return;
+          handled = true;
+          setListening(false);
+          voiceBusy = false;
+          voiceBtn.disabled = false;
+          voiceHint.textContent = sttErrorMessage(code);
+          if (code === "network" || code === "not-allowed") {
+            speakToggle.checked = true;
+            input.focus();
+          }
+        };
+
+        rec.onend = () => {
+          // Only clear listening UI if we did not already hand off to ask().
+          if (!voiceBusy) setListening(false);
+        };
+
+        rec.onresult = async (ev) => {
+          if (handled) return;
+          handled = true;
+          const transcript = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+          setListening(false);
+          if (!transcript) {
+            voiceHint.textContent = "Did not catch that. Tap Alexa+ voice once and try again.";
+            return;
+          }
+          voiceBusy = true;
+          voiceBtn.disabled = true;
+          input.value = transcript;
+          voiceHint.textContent = "Got it. Checking NWS, then speaking…";
+          try {
+            await ask(transcript, { speak: true });
+            voiceHint.textContent = "Done. Tap Alexa+ voice for another turn.";
+          } finally {
+            voiceBusy = false;
+            voiceBtn.disabled = false;
+            setListening(false);
+          }
+        };
+
+        try {
+          rec.start();
+        } catch (err) {
+          setListening(false);
+          voiceHint.textContent = "Could not start mic. Reload the page, then tap once.";
+        }
+      });
+    }
+
+    if (window.speechSynthesis) {
+      fillVoiceSelect();
+      window.speechSynthesis.onvoiceschanged = () => fillVoiceSelect();
+    }
+    if (voiceSelect) {
+      voiceSelect.addEventListener("change", () => {
+        preferredVoiceURI = voiceSelect.value;
+        localStorage.setItem("docwatch_voice_uri", preferredVoiceURI);
+        const v = selectedVoice();
+        voiceHint.textContent = v ? ("Voice set to " + v.name) : "Voice updated.";
+        // Preview so you can hear the Alexa-like pick immediately.
+        speak("Coastal advisories ready for Rochester.");
       });
     }
 
