@@ -91,6 +91,36 @@
       padding: 0 1rem;
       cursor: pointer;
     }
+    .voice-row {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.75rem 0 0.25rem;
+    }
+    .voice-row button {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+    }
+    #voiceBtn.listening {
+      background: #ff6b6b;
+      color: #fff;
+      box-shadow: 0 0 18px rgba(255,107,107,0.55);
+    }
+    #voiceBtn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .voice-hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin: 0.35rem 0 0.15rem;
+      min-height: 1.1em;
+    }
+    .orb.listening {
+      box-shadow: 0 0 40px rgba(255,107,107,0.65);
+      animation-duration: 0.9s;
+    }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
     .chips button {
       background: #1c2433;
@@ -105,7 +135,7 @@
 </head>
 <body>
   <div class="phone">
-    <div class="orb" aria-hidden="true"></div>
+    <div class="orb" id="orb" aria-hidden="true"></div>
     <h1>Alexa+ · DOC Watch</h1>
     <div class="sub">Simulated Agent Skill · MCP-backed</div>
     <div class="badge">SIMULATION: Alexa+ sensors · live NWS</div>
@@ -119,6 +149,10 @@
       <button type="button" data-q="Show my Alexa+ sensors.">Alexa+ sensors</button>
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
+    <div class="voice-row">
+      <button type="button" id="voiceBtn" aria-pressed="false" title="Hold conversation by voice">🎙 Voice to voice</button>
+    </div>
+    <div class="voice-hint" id="voiceHint">Tap Voice to voice: speak, then DOC replies out loud.</div>
     <form class="composer" id="form">
       <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
       <button type="submit">Ask</button>
@@ -129,6 +163,9 @@
     const chat = document.getElementById("chat");
     const form = document.getElementById("form");
     const input = document.getElementById("input");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const voiceHint = document.getElementById("voiceHint");
+    const orb = document.getElementById("orb");
 
     function add(role, text) {
       const el = document.createElement("div");
@@ -139,8 +176,9 @@
     }
 
     let lastLocation = "rochester";
+    let voiceBusy = false;
 
-    add("agent", "Hi. I'm DOC Watch on Alexa+. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point, freeze or flood risk, or how the mesh works. Alexa+ sensors are on.");
+    add("agent", "Hi. I'm DOC Watch on Alexa+. Tap Voice to voice to speak with me, or ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
 
     function pickLocation(s) {
       if (/\bbuffalo\b|\bbflo\b|\blake erie\b/.test(s)) return "buffalo";
@@ -178,7 +216,6 @@
       if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i") || s.includes("coastal") || s.includes("maritime")) {
         return ["get_DOC_advice", { location, asset: pickAsset(s) }];
       }
-      // Risk questions: DOC advice folds alerts + freeze/wind/flood/coastal rules + nearest coastline.
       if (s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12h") || /\b12\b/.test(s)) {
         return ["get_DOC_advice", { location, asset: pickAsset(s) }];
       }
@@ -191,7 +228,24 @@
       return ["get_current_conditions", { location }];
     }
 
-    async function ask(q) {
+    function speak(text) {
+      return new Promise((resolve) => {
+        if (!window.speechSynthesis) {
+          resolve();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(String(text || "").slice(0, 1200));
+        u.lang = "en-US";
+        u.rate = 1.02;
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        window.speechSynthesis.speak(u);
+      });
+    }
+
+    async function ask(q, opts) {
+      const speakReply = !!(opts && opts.speak);
       add("user", q);
       const [tool, body] = route(q);
       add("agent", "One moment while I check National Weather Service…");
@@ -205,10 +259,93 @@
         const human = (data.structuredContent && data.structuredContent.human) || data.human || JSON.stringify(data);
         chat.removeChild(chat.lastChild);
         add("agent", human);
+        if (speakReply) await speak(human);
+        return human;
       } catch (e) {
+        const err = "Something went wrong: " + (e.message || e);
         chat.removeChild(chat.lastChild);
-        add("agent", "Something went wrong: " + (e.message || e));
+        add("agent", err);
+        if (speakReply) await speak(err);
+        return err;
       }
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
+    function setListening(on) {
+      voiceBtn.classList.toggle("listening", on);
+      orb.classList.toggle("listening", on);
+      voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Voice to voice";
+      voiceHint.textContent = on
+        ? "Listening. Speak your question clearly."
+        : "Tap Voice to voice: speak, then DOC replies out loud.";
+    }
+
+    function stopListening() {
+      try { if (recognition) recognition.stop(); } catch (_) {}
+      setListening(false);
+    }
+
+    if (!SpeechRecognition) {
+      voiceBtn.disabled = true;
+      voiceHint.textContent = "Voice to voice needs Chrome or Edge on this machine.";
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+
+      recognition.onstart = () => setListening(true);
+      recognition.onend = () => {
+        if (!voiceBusy) setListening(false);
+      };
+      recognition.onerror = (ev) => {
+        setListening(false);
+        voiceBusy = false;
+        const msg = ev.error === "not-allowed"
+          ? "Microphone permission blocked. Allow mic for localhost, then try again."
+          : "Voice error: " + (ev.error || "unknown") + ". Try again.";
+        voiceHint.textContent = msg;
+        add("agent", msg);
+      };
+      recognition.onresult = async (ev) => {
+        const transcript = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+        setListening(false);
+        if (!transcript) {
+          voiceHint.textContent = "Did not catch that. Tap Voice to voice and try again.";
+          return;
+        }
+        voiceBusy = true;
+        voiceBtn.disabled = true;
+        voiceHint.textContent = "Heard you. Checking NWS, then speaking the reply…";
+        input.value = transcript;
+        try {
+          await ask(transcript, { speak: true });
+          voiceHint.textContent = "Done. Tap Voice to voice for another turn.";
+        } finally {
+          voiceBusy = false;
+          voiceBtn.disabled = false;
+          setListening(false);
+        }
+      };
+
+      voiceBtn.addEventListener("click", () => {
+        if (voiceBusy) return;
+        if (voiceBtn.classList.contains("listening")) {
+          stopListening();
+          return;
+        }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        try {
+          recognition.start();
+        } catch (_) {
+          // Already started
+          stopListening();
+        }
+      });
     }
 
     form.addEventListener("submit", (e) => {
