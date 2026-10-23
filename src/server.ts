@@ -23,6 +23,7 @@ import { runGetHomeSensors } from "./tools/get_home_sensors.js";
 import { runGetSpokenBriefing } from "./tools/get_spoken_briefing.js";
 import { runSetWatch } from "./tools/set_watch.js";
 import { runAlexaPlusChat } from "./services/alexaChat.js";
+import { awsVoiceHealth, synthesizePollySpeech, transcribePcm16 } from "./services/awsVoice.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -55,7 +56,13 @@ app.use(express.json({ limit: "2mb" }));
 // Static web playground + Alexa+ sim
 app.use(express.static(join(__dirname, "../web")));
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
+  const awsVoice = await awsVoiceHealth().catch((err) => ({
+    region: process.env.AWS_REGION || "us-east-1",
+    polly: false,
+    transcribe: false,
+    error: err instanceof Error ? err.message : String(err),
+  }));
   res.json({
     ok: true,
     service: "DOC Watch",
@@ -67,6 +74,7 @@ app.get("/health", (_req, res) => {
     },
     mockRing: (process.env.MOCK_RING ?? "true") !== "false",
     alexaSensors: true,
+    awsVoice,
   });
 });
 
@@ -95,6 +103,49 @@ app.post("/api/alexa-chat", async (req: Request, res: Response) => {
       simulatedAlexaPlus: true,
       toolsCalled: [],
     });
+  }
+});
+
+/** Amazon Polly TTS for Alexa+ chat replies (AWS credentials / credits). */
+app.post("/api/tts", async (req: Request, res: Response) => {
+  try {
+    const text = String(req.body?.text ?? req.body?.message ?? "").trim();
+    const result = await synthesizePollySpeech(text);
+    if (!result.ok) {
+      res.status(502).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/tts]", message);
+    res.status(500).json({ ok: false, error: message, provider: "amazon-polly" });
+  }
+});
+
+/**
+ * Amazon Transcribe Streaming STT.
+ * Body: { pcm16Base64: string, sampleRate?: number }  // little-endian mono PCM
+ */
+app.post("/api/stt", async (req: Request, res: Response) => {
+  try {
+    const b64 = String(req.body?.pcm16Base64 ?? "").trim();
+    if (!b64) {
+      res.status(400).json({ ok: false, error: "pcm16Base64 required", provider: "amazon-transcribe" });
+      return;
+    }
+    const sampleRate = Number(req.body?.sampleRate) || 16000;
+    const pcm = Buffer.from(b64, "base64");
+    const result = await transcribePcm16(pcm, sampleRate);
+    if (!result.ok) {
+      res.status(422).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/stt]", message);
+    res.status(500).json({ ok: false, error: message, provider: "amazon-transcribe" });
   }
 });
 
