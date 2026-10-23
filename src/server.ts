@@ -22,6 +22,7 @@ import { runGetForecast } from "./tools/get_forecast.js";
 import { runGetHomeSensors } from "./tools/get_home_sensors.js";
 import { runGetSpokenBriefing } from "./tools/get_spoken_briefing.js";
 import { runSetWatch } from "./tools/set_watch.js";
+import { runAlexaPlusChat } from "./services/alexaChat.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -71,6 +72,30 @@ app.get("/health", (_req, res) => {
 
 app.get("/api/tools", (_req, res) => {
   res.json({ tools: TOOL_NAMES });
+});
+
+/**
+ * Local Alexa+ chat endpoint (hackathon web simulator).
+ * Alexa+ is the MCP client / chat / voice layer; DOC Watch is tools only.
+ * Partner-preview device access is gated — this stands in for Alexa+ chat.
+ */
+app.post("/api/alexa-chat", async (req: Request, res: Response) => {
+  try {
+    const message = String(req.body?.message ?? req.body?.text ?? "").trim();
+    const lastLocation = req.body?.lastLocation ? String(req.body.lastLocation) : undefined;
+    const history = Array.isArray(req.body?.history) ? req.body.history : undefined;
+    const result = await runAlexaPlusChat({ message, lastLocation, history });
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/alexa-chat]", message);
+    res.status(500).json({
+      error: message,
+      reply: `Alexa-plus chat could not complete that turn. ${message}`,
+      simulatedAlexaPlus: true,
+      toolsCalled: [],
+    });
+  }
 });
 
 /** Thin REST mirror so the web playground can call the same tool runners without a full MCP client. */

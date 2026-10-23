@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DOC Watch: Alexa+ Simulation</title>
+  <title>DOC Watch · Alexa+ Chat</title>
   <style>
     :root {
       --bg: #0e1116;
@@ -38,96 +38,121 @@
       box-shadow: 0 0 30px rgba(0,202,255,0.45);
       animation: pulse 2.4s ease-in-out infinite;
     }
+    .orb.listening {
+      box-shadow: 0 0 40px rgba(255,107,107,0.65);
+      animation-duration: 0.9s;
+    }
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 0.9; }
       50% { transform: scale(1.06); opacity: 1; }
     }
     h1 { text-align: center; font-size: 1.15rem; margin: 0 0 0.25rem; }
-    .sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+    .sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
     .badge {
       text-align: center;
       color: #ffb020;
       font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
+      line-height: 1.35;
     }
     .chat {
       background: var(--card);
       border-radius: 16px;
-      padding: 0.75rem;
-      height: 360px;
-      overflow: auto;
+      min-height: 280px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 0.85rem;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.55rem;
     }
     .msg {
       max-width: 92%;
-      padding: 0.7rem 0.85rem;
+      padding: 0.65rem 0.8rem;
       border-radius: 14px;
+      font-size: 0.9rem;
       line-height: 1.4;
-      font-size: 0.92rem;
       white-space: pre-wrap;
     }
-    .user { align-self: flex-end; background: #243044; }
-    .agent { align-self: flex-start; background: #102636; border: 1px solid #1d4a5c; }
-    .composer { display: flex; gap: 0.5rem; margin-top: 0.85rem; }
-    input {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid #2a3344;
-      background: #0f131a;
-      color: var(--text);
-      padding: 0.75rem 1rem;
-      font: inherit;
+    .msg.user {
+      align-self: flex-end;
+      background: #243247;
     }
-    button {
-      border: none;
-      border-radius: 999px;
-      background: var(--alexa);
-      color: #032;
+    .msg.alexa {
+      align-self: flex-start;
+      background: #132531;
+      border: 1px solid #1e4a5a;
+    }
+    .msg .who {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--alexa);
       font-weight: 700;
-      padding: 0 1rem;
-      cursor: pointer;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    .voice-row {
-      display: flex;
-      gap: 0.5rem;
-      margin: 0.75rem 0 0.25rem;
-    }
-    .voice-row button {
-      flex: 1;
-      padding: 0.85rem 1rem;
-      font-size: 0.95rem;
-    }
-    #voiceBtn.listening {
-      background: #ff6b6b;
-      color: #fff;
-      box-shadow: 0 0 18px rgba(255,107,107,0.55);
-    }
-    #voiceBtn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-    .voice-hint {
-      text-align: center;
+    .trace {
+      font-size: 0.68rem;
       color: var(--muted);
-      font-size: 0.72rem;
-      margin: 0.35rem 0 0.15rem;
-      min-height: 1.1em;
-    }
-    .orb.listening {
-      box-shadow: 0 0 40px rgba(255,107,107,0.65);
-      animation-duration: 0.9s;
+      margin-top: 0.35rem;
     }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+    .chips button, .voice-row button, .composer button {
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+    }
     .chips button {
       background: #1c2433;
       color: var(--text);
       font-size: 0.75rem;
       padding: 0.45rem 0.7rem;
-      font-weight: 600;
+    }
+    .voice-row {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.85rem 0 0.35rem;
+    }
+    .voice-row button {
+      flex: 1;
+      padding: 0.9rem 1rem;
+      font-size: 0.95rem;
+      background: var(--alexa);
+      color: #032;
+    }
+    #voiceBtn.listening {
+      background: #ff6b6b;
+      color: #fff;
+    }
+    #voiceBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .voice-hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin: 0.25rem 0 0.5rem;
+      min-height: 1.2em;
+      line-height: 1.35;
+    }
+    .composer {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.35rem;
+    }
+    .composer input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid #2a3344;
+      background: #121820;
+      color: var(--text);
+      padding: 0.7rem 0.9rem;
+      font: inherit;
+    }
+    .composer button {
+      background: var(--alexa);
+      color: #032;
+      padding: 0 1rem;
     }
     a { color: var(--alexa); font-size: 0.85rem; }
     .footer { text-align: center; margin-top: 0.85rem; }
@@ -136,10 +161,10 @@
 <body>
   <div class="phone">
     <div class="orb" id="orb" aria-hidden="true"></div>
-    <h1>Alexa+ · DOC Watch</h1>
-    <div class="sub">Alexa+ Agent Skill sim · MCP tools · live NWS</div>
-    <div class="badge">Voice-to-voice = Alexa+ · this page is the local sim</div>
-    <div class="chat" id="chat"></div>
+    <h1>Alexa+ Chat · DOC Watch</h1>
+    <div class="sub">Alexa+ is the chat client · DOC Watch is MCP tools</div>
+    <div class="badge">Hackathon path: simulate Alexa+ chat in this web app · MCP Streamable HTTP 2025-11-25</div>
+    <div class="chat" id="chat" aria-live="polite"></div>
     <div class="chips">
       <button type="button" data-q="Alexa, coastal advisories for Rochester?">Coastal advisories</button>
       <button type="button" data-q="Any freeze or flood risk in the next twelve hours?">12h risk</button>
@@ -150,408 +175,184 @@
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
     <div class="voice-row">
-      <button type="button" id="voiceBtn" aria-pressed="false" title="Local stand-in for Alexa+ voice turn">🎙 Alexa+ voice (sim)</button>
-      <button type="button" id="speakLastBtn" title="Speak the last DOC reply" style="background:#1c2433;color:var(--text)">🔊 Speak reply</button>
+      <button type="button" id="voiceBtn" aria-pressed="false">🎙 Talk to Alexa+ chat</button>
     </div>
-    <label class="voice-hint" style="display:flex;flex-direction:column;align-items:stretch;gap:0.35rem;text-align:left">
-      <span style="text-align:center">Alexa-like voice</span>
-      <select id="voiceSelect" style="width:100%;background:#1c2433;color:var(--text);border:1px solid #2a3344;border-radius:10px;padding:0.45rem 0.6rem"></select>
-    </label>
-    <label class="voice-hint" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;cursor:pointer">
-      <input type="checkbox" id="speakToggle" checked />
-      Speak replies (simulates Alexa+ voice out)
-    </label>
-    <div class="voice-hint" id="voiceHint">Product v2v is Alexa+. This mic is a local sim — tap once, speak, wait for the reply.</div>
+    <div class="voice-hint" id="voiceHint">Voice goes into Alexa+ chat (not a browser “Alexa-like” TTS voice). Tap once, speak, then Alexa+ replies in this chat.</div>
     <form class="composer" id="form">
-      <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
-      <button type="submit">Ask</button>
+      <input id="input" placeholder="Message Alexa+ chat…" autocomplete="off" />
+      <button type="submit">Send</button>
     </form>
-    <div class="footer"><a href="/demo.html">Open tool playground</a></div>
+    <div class="footer"><a href="/demo.html">MCP tool playground</a></div>
   </div>
   <script>
     const chat = document.getElementById("chat");
     const form = document.getElementById("form");
     const input = document.getElementById("input");
     const voiceBtn = document.getElementById("voiceBtn");
-    const speakLastBtn = document.getElementById("speakLastBtn");
-    const speakToggle = document.getElementById("speakToggle");
-    const voiceSelect = document.getElementById("voiceSelect");
     const voiceHint = document.getElementById("voiceHint");
     const orb = document.getElementById("orb");
 
-    function add(role, text) {
+    let lastLocation = "rochester";
+    let busy = false;
+    let listening = false;
+    const history = [];
+
+    function add(role, text, trace) {
       const el = document.createElement("div");
-      el.className = "msg " + role;
-      el.textContent = text;
+      el.className = "msg " + (role === "user" ? "user" : "alexa");
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = role === "user" ? "You" : "Alexa+";
+      el.appendChild(who);
+      const body = document.createElement("div");
+      body.textContent = text;
+      el.appendChild(body);
+      if (trace) {
+        const t = document.createElement("div");
+        t.className = "trace";
+        t.textContent = trace;
+        el.appendChild(t);
+      }
       chat.appendChild(el);
       chat.scrollTop = chat.scrollHeight;
     }
 
-    let lastLocation = "rochester";
-    let voiceBusy = false;
-    let isListening = false;
-    let lastAgentReply = "";
-    let preferredVoiceURI = localStorage.getItem("docwatch_voice_uri") || "";
+    add(
+      "alexa",
+      "Hi — this is Alexa+ chat with DOC Watch. I call DOC Watch MCP tools for coastal advisories, forecast, and Alexa+ sensors. Ask by voice or text."
+    );
 
-    add("agent", "Hi. I'm DOC Watch for Alexa+. Real voice-to-voice runs through Alexa-plus calling these MCP tools. This page simulates that loop locally. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
-    lastAgentReply = chat.querySelector(".agent") ? chat.querySelector(".agent").textContent : "";
-
-    function pickLocation(s) {
-      if (/\bbuffalo\b|\bbflo\b|\blake erie\b/.test(s)) return "buffalo";
-      if (/\bfairport\b/.test(s)) return "fairport";
-      if (/\bsodus\b/.test(s)) return "sodus";
-      if (/\blong pond\b|\bgreece\b/.test(s)) return "long_pond";
-      if (/\brochester\b|\bnorth greece\b|\broc\b/.test(s)) return "rochester";
-      return lastLocation;
-    }
-
-    function pickAsset(s) {
-      if (/\bmaritime\b|\bboat\b|\bdock\b|\bcraft\b/.test(s)) return "maritime";
-      if (/\bmobile\b|\bvan\b|\bvehicle\b|\bcar\b/.test(s)) return "mobile";
-      if (/\bcurrent location\b|\bhere\b|\bmy location\b/.test(s)) return "current_location";
-      if (/\bhome\b|\bhouse\b/.test(s)) return "home";
-      return "maritime";
-    }
-
-    function route(q) {
-      const s = q.toLowerCase();
-      const location = pickLocation(s);
-      lastLocation = location;
-      if (s.includes("sensor") || s.includes("alexa+") || s.includes("humidity") || s.includes("motion")) {
-        return ["get_home_sensors", { location }];
-      }
-      if (s.includes("brief") || s.includes("sixty") || s.includes("60") || s.includes("spoken")) {
-        return ["get_spoken_briefing", { location, seconds: 60 }];
-      }
-      if (s.includes("feature") || s.includes("mesh") || s.includes("flood sensor") || s.includes("join") || s.includes("how does")) {
-        return ["describe_features", { topic: s.includes("flood") ? "flood_sensor" : "all" }];
-      }
-      if (s.includes("watch") && (s.includes("alert") || s.includes("threshold") || s.includes("set"))) {
-        return ["set_watch", { location, windMph: 25, freezeTempF: 36, flood: true }];
-      }
-      if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i") || s.includes("coastal") || s.includes("maritime")) {
-        return ["get_DOC_advice", { location, asset: pickAsset(s) }];
-      }
-      if (s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12h") || /\b12\b/.test(s)) {
-        return ["get_DOC_advice", { location, asset: pickAsset(s) }];
-      }
-      if (s.includes("alert")) {
-        return ["get_alerts", { location }];
-      }
-      if (s.includes("forecast") || s.includes("tonight") || s.includes("tomorrow") || s.includes("hourly")) {
-        return ["get_forecast", { location, hours: 24 }];
-      }
-      return ["get_current_conditions", { location }];
-    }
-
-    function scoreVoice(v) {
-      const n = v.name || "";
-      const lang = v.lang || "";
-      if (!/^en(-|_)/i.test(lang)) return -1000;
-      let score = 10;
-      // Prefer neural / natural female voices (Alexa-like).
-      if (/aria|jenny|michelle|natasha|samantha|zira|susan|hazel|eva|sonia/i.test(n)) score += 80;
-      if (/natural|neural|online/i.test(n)) score += 60;
-      if (/google us english/i.test(n)) score += 50;
-      if (/female/i.test(n)) score += 30;
-      if (/microsoft/i.test(n)) score += 15;
-      // Avoid classic robotic desktop / male defaults.
-      if (/david|mark|george|ravi|desktop|espeak|microsoft david/i.test(n)) score -= 80;
-      if (/male/i.test(n) && !/female/i.test(n)) score -= 20;
-      return score;
-    }
-
-    function listEnVoices() {
-      if (!window.speechSynthesis) return [];
-      return window.speechSynthesis.getVoices()
-        .filter((v) => /^en(-|_)/i.test(v.lang || ""))
-        .slice()
-        .sort((a, b) => scoreVoice(b) - scoreVoice(a));
-    }
-
-    function selectedVoice() {
-      const voices = listEnVoices();
-      if (!voices.length) return null;
-      if (preferredVoiceURI) {
-        const match = voices.find((v) => v.voiceURI === preferredVoiceURI);
-        // Ignore cached robotic voices from older sessions.
-        if (match && scoreVoice(match) >= 40) return match;
-      }
-      return voices[0];
-    }
-
-    function fillVoiceSelect() {
-      if (!voiceSelect) return;
-      const voices = listEnVoices();
-      const prev = preferredVoiceURI || (voices[0] && voices[0].voiceURI) || "";
-      voiceSelect.innerHTML = "";
-      if (!voices.length) {
-        const opt = document.createElement("option");
-        opt.textContent = "No English voices found yet — reload page";
-        voiceSelect.appendChild(opt);
-        return;
-      }
-      for (const v of voices) {
-        const opt = document.createElement("option");
-        opt.value = v.voiceURI;
-        opt.textContent = v.name + " (" + v.lang + ")" + (scoreVoice(v) >= 50 ? " ★" : "");
-        voiceSelect.appendChild(opt);
-      }
-      if (prev && [...voiceSelect.options].some((o) => o.value === prev)) {
-        voiceSelect.value = prev;
-        preferredVoiceURI = prev;
-      } else {
-        preferredVoiceURI = voices[0].voiceURI;
-        voiceSelect.value = preferredVoiceURI;
-        localStorage.setItem("docwatch_voice_uri", preferredVoiceURI);
-      }
-    }
-
-    function speak(text) {
-      return new Promise((resolve) => {
-        if (!window.speechSynthesis) {
-          resolve();
-          return;
-        }
-        window.speechSynthesis.cancel();
-        const clean = String(text || "")
-          .replace(/https?:\/\/\S+/gi, "")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 1400);
-        if (!clean) {
-          resolve();
-          return;
-        }
-        const u = new SpeechSynthesisUtterance(clean);
-        u.lang = "en-US";
-        // Alexa-like pacing: calm, slightly warm.
-        u.rate = 0.96;
-        u.pitch = 1.05;
-        u.volume = 1;
-        const voice = selectedVoice();
-        if (voice) {
-          u.voice = voice;
-          u.lang = voice.lang || "en-US";
-        }
-        let settled = false;
-        const done = () => {
-          if (settled) return;
-          settled = true;
-          clearInterval(keepAlive);
-          resolve();
-        };
-        u.onend = done;
-        u.onerror = done;
-        // Chrome bug: synthesis can freeze unless periodically resumed.
-        const keepAlive = setInterval(() => {
-          try {
-            if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
-          } catch (_) {}
-        }, 4000);
-        setTimeout(() => {
-          try {
-            window.speechSynthesis.speak(u);
-            window.speechSynthesis.resume();
-          } catch (_) {
-            done();
-          }
-        }, 120);
+    async function alexaChat(message) {
+      const res = await fetch("/api/alexa-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          lastLocation,
+          history: history.slice(-8),
+        }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.reply || res.statusText);
+      if (data.location) lastLocation = data.location;
+      return data;
     }
 
-    function shouldSpeak(opts) {
-      if (opts && opts.speak === true) return true;
-      if (opts && opts.speak === false) return false;
-      return !!(speakToggle && speakToggle.checked);
-    }
-
-    async function ask(q, opts) {
-      const speakReply = shouldSpeak(opts);
+    async function sendToAlexaPlus(message) {
+      const q = String(message || "").trim();
+      if (!q || busy) return;
+      busy = true;
+      voiceBtn.disabled = true;
       add("user", q);
-      const [tool, body] = route(q);
-      // Silent wait bubble — do not speak the filler (that sounded robotic).
-      add("agent", "One moment…");
+      history.push({ role: "user", text: q });
+      add("alexa", "Checking DOC Watch…");
       try {
-        const res = await fetch("/api/tools/" + tool, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        const human = (data.structuredContent && data.structuredContent.human) || data.human || JSON.stringify(data);
+        const data = await alexaChat(q);
         chat.removeChild(chat.lastChild);
-        add("agent", human);
-        lastAgentReply = human;
-        if (speakReply) await speak(human);
-        return human;
+        const tools = (data.toolsCalled || [])
+          .map((t) => t.name)
+          .join(", ");
+        const trace = tools
+          ? "MCP tools: " + tools + (data.simulatedAlexaPlus ? " · local Alexa+ chat sim" : "")
+          : data.simulatedAlexaPlus ? "local Alexa+ chat sim" : "";
+        add("alexa", data.reply || "(no reply)", trace);
+        history.push({ role: "alexa", text: data.reply || "" });
+        voiceHint.textContent = "Alexa+ chat replied. Tap Talk to Alexa+ chat for another voice turn.";
       } catch (e) {
-        const err = "Something went wrong: " + (e.message || e);
         chat.removeChild(chat.lastChild);
-        add("agent", err);
-        lastAgentReply = err;
-        if (speakReply) await speak(err);
-        return err;
+        add("alexa", "Sorry — Alexa+ chat hit an error: " + (e.message || e));
+        voiceHint.textContent = "Chat error. Try a chip or type again.";
+      } finally {
+        busy = false;
+        voiceBtn.disabled = false;
+        setListening(false);
       }
+    }
+
+    function setListening(on) {
+      listening = on;
+      voiceBtn.classList.toggle("listening", on);
+      orb.classList.toggle("listening", on);
+      voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      voiceBtn.textContent = on ? "● Listening… tap to cancel" : "🎙 Talk to Alexa+ chat";
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    function setListening(on) {
-      isListening = on;
-      voiceBtn.classList.toggle("listening", on);
-      orb.classList.toggle("listening", on);
-      voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Alexa+ voice (sim)";
-    }
-
-    function sttErrorMessage(code) {
-      if (code === "not-allowed") {
-        return "Microphone blocked. Allow mic for 127.0.0.1, then reload.";
-      }
-      if (code === "network") {
-        return "Browser mic STT is offline (cloud). Product v2v is Alexa+. Use chips + Speak replies, or Speak reply.";
-      }
-      if (code === "no-speech") {
-        return "No speech heard. Tap Alexa+ voice once, then speak.";
-      }
-      if (code === "audio-capture") {
-        return "No microphone found. Check Windows sound settings.";
-      }
-      if (code === "aborted") return "Listening stopped.";
-      return "Mic sim error: " + (code || "unknown") + ". Use chips + Speak replies (Alexa+ is the real v2v path).";
-    }
-
-    function makeRecognizer() {
-      if (!SpeechRecognition) return null;
-      const rec = new SpeechRecognition();
-      rec.lang = "en-US";
-      rec.interimResults = false; // prevents UI thrash / "spaz"
-      rec.maxAlternatives = 1;
-      rec.continuous = false;
-      return rec;
-    }
-
-    function stopListening(rec) {
-      try { if (rec) rec.onresult = null; } catch (_) {}
-      try { if (rec) rec.onerror = null; } catch (_) {}
-      try { if (rec) rec.onend = null; } catch (_) {}
-      try { if (rec) rec.abort(); } catch (_) {}
-      setListening(false);
-    }
-
     if (!SpeechRecognition) {
       voiceBtn.disabled = true;
-      voiceHint.textContent = "Mic STT needs Chrome or Edge. Use chips/type with Speak replies ON.";
+      voiceHint.textContent = "Voice needs Chrome/Edge. Type or use chips — still goes to Alexa+ chat.";
     } else {
       voiceBtn.addEventListener("click", () => {
-        if (voiceBusy) return;
-
-        // Toggle off if already listening — no retry loops.
-        if (isListening) {
+        if (busy) return;
+        if (listening) {
           setListening(false);
-          voiceHint.textContent = "Listening stopped. Tap again when ready, or use chips.";
+          voiceHint.textContent = "Cancelled. Type below or tap Talk to Alexa+ chat again.";
           return;
         }
 
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        const rec = new SpeechRecognition();
+        rec.lang = "en-US";
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.continuous = false;
 
-        const rec = makeRecognizer();
-        if (!rec) return;
-
-        let handled = false;
-
+        let done = false;
         rec.onstart = () => {
           setListening(true);
-          voiceHint.textContent = "Listening… ask your question, then pause.";
+          voiceHint.textContent = "Listening for Alexa+ chat… speak your question.";
         };
-
         rec.onerror = (ev) => {
-          const code = ev.error || "unknown";
-          if (code === "aborted") return;
-          handled = true;
+          if (ev.error === "aborted") return;
+          done = true;
           setListening(false);
-          voiceBusy = false;
-          voiceBtn.disabled = false;
-          voiceHint.textContent = sttErrorMessage(code);
-          if (code === "network" || code === "not-allowed") {
-            speakToggle.checked = true;
+          if (ev.error === "network") {
+            voiceHint.textContent = "Mic STT network error. Type into Alexa+ chat instead — same MCP path.";
             input.focus();
+          } else if (ev.error === "not-allowed") {
+            voiceHint.textContent = "Allow microphone for 127.0.0.1, then try again.";
+          } else if (ev.error === "no-speech") {
+            voiceHint.textContent = "No speech heard. Tap Talk to Alexa+ chat once more.";
+          } else {
+            voiceHint.textContent = "Mic error (" + ev.error + "). Use chips or type into Alexa+ chat.";
           }
         };
-
         rec.onend = () => {
-          // Only clear listening UI if we did not already hand off to ask().
-          if (!voiceBusy) setListening(false);
+          if (!busy) setListening(false);
         };
-
-        rec.onresult = async (ev) => {
-          if (handled) return;
-          handled = true;
+        rec.onresult = (ev) => {
+          if (done) return;
+          done = true;
           const transcript = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
           setListening(false);
           if (!transcript) {
-            voiceHint.textContent = "Did not catch that. Tap Alexa+ voice once and try again.";
+            voiceHint.textContent = "Did not catch that. Try again or type.";
             return;
           }
-          voiceBusy = true;
-          voiceBtn.disabled = true;
           input.value = transcript;
-          voiceHint.textContent = "Got it. Checking NWS, then speaking…";
-          try {
-            await ask(transcript, { speak: true });
-            voiceHint.textContent = "Done. Tap Alexa+ voice for another turn.";
-          } finally {
-            voiceBusy = false;
-            voiceBtn.disabled = false;
-            setListening(false);
-          }
+          voiceHint.textContent = "Sending to Alexa+ chat…";
+          sendToAlexaPlus(transcript);
         };
 
         try {
           rec.start();
-        } catch (err) {
+        } catch (_) {
           setListening(false);
-          voiceHint.textContent = "Could not start mic. Reload the page, then tap once.";
+          voiceHint.textContent = "Could not start mic. Reload, then tap once.";
         }
       });
     }
-
-    if (window.speechSynthesis) {
-      fillVoiceSelect();
-      window.speechSynthesis.onvoiceschanged = () => fillVoiceSelect();
-    }
-    if (voiceSelect) {
-      voiceSelect.addEventListener("change", () => {
-        preferredVoiceURI = voiceSelect.value;
-        localStorage.setItem("docwatch_voice_uri", preferredVoiceURI);
-        const v = selectedVoice();
-        voiceHint.textContent = v ? ("Voice set to " + v.name) : "Voice updated.";
-        // Preview so you can hear the Alexa-like pick immediately.
-        speak("Coastal advisories ready for Rochester.");
-      });
-    }
-
-    speakLastBtn.addEventListener("click", async () => {
-      if (!lastAgentReply) {
-        voiceHint.textContent = "No reply to speak yet. Ask a question first.";
-        return;
-      }
-      voiceHint.textContent = "Speaking last DOC reply…";
-      await speak(lastAgentReply);
-      voiceHint.textContent = "Done.";
-    });
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const q = input.value.trim();
       if (!q) return;
       input.value = "";
-      ask(q);
+      sendToAlexaPlus(q);
     });
 
     document.querySelectorAll(".chips button").forEach((btn) => {
-      btn.addEventListener("click", () => ask(btn.getAttribute("data-q")));
+      btn.addEventListener("click", () => sendToAlexaPlus(btn.getAttribute("data-q")));
     });
   </script>
 </body>

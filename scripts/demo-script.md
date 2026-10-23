@@ -67,12 +67,12 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 
 ---
 
-### 2:35–2:55 — Alexa+ simulation
+### 2:35–2:55 — Alexa+ chat
 
-**Do:** Open http://127.0.0.1:8787/index.html → chip **“Coastal advisories”** (or tap **Alexa+ voice (sim)** if mic works).
+**Do:** Open http://127.0.0.1:8787/index.html → chip **“Coastal advisories”** or **Talk to Alexa+ chat**.
 
 **Say:**  
-“Voice-to-voice is Alexa-plus calling our MCP tools. This screen is the local sim of that same loop — coastal advisories, nearest coastline, Alexa-plus sensors.”
+“Voice-to-voice is Alexa-plus chat calling our MCP tools. Alexa-plus is the client; DOC Watch is the tool server. This page is the hackathon Alexa-plus chat sim — same coastal advisories and nearest coastline.”
 
 ---
 
