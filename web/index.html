@@ -24,7 +24,7 @@
       padding: 1rem;
     }
     .phone {
-      width: min(420px, 100%);
+      width: min(440px, 100%);
       background: linear-gradient(180deg, #1a2030, #10141c);
       border: 1px solid #2a3344;
       border-radius: 28px;
@@ -42,6 +42,9 @@
       box-shadow: 0 0 40px rgba(255,107,107,0.65);
       animation-duration: 0.9s;
     }
+    .orb.speaking {
+      box-shadow: 0 0 40px rgba(0,202,255,0.85);
+    }
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 0.9; }
       50% { transform: scale(1.06); opacity: 1; }
@@ -58,8 +61,8 @@
     .chat {
       background: var(--card);
       border-radius: 16px;
-      min-height: 280px;
-      max-height: 380px;
+      min-height: 260px;
+      max-height: 360px;
       overflow-y: auto;
       padding: 0.85rem;
       display: flex;
@@ -74,10 +77,7 @@
       line-height: 1.4;
       white-space: pre-wrap;
     }
-    .msg.user {
-      align-self: flex-end;
-      background: #243247;
-    }
+    .msg.user { align-self: flex-end; background: #243247; }
     .msg.alexa {
       align-self: flex-start;
       background: #132531;
@@ -92,11 +92,7 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .trace {
-      font-size: 0.68rem;
-      color: var(--muted);
-      margin-top: 0.35rem;
-    }
+    .trace { font-size: 0.68rem; color: var(--muted); margin-top: 0.35rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
     .chips button, .voice-row button, .composer button {
       border: none;
@@ -112,29 +108,41 @@
     }
     .voice-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       margin: 0.85rem 0 0.35rem;
     }
     .voice-row button {
-      flex: 1;
-      padding: 0.9rem 1rem;
-      font-size: 0.95rem;
+      flex: 1 1 46%;
+      padding: 0.85rem 0.75rem;
+      font-size: 0.88rem;
       background: var(--alexa);
       color: #032;
     }
-    #voiceBtn.listening {
-      background: #ff6b6b;
-      color: #fff;
+    .voice-row button.secondary {
+      background: #1c2433;
+      color: var(--text);
     }
-    #voiceBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+    #voiceBtn.listening { background: #ff6b6b; color: #fff; }
+    #voiceBtn:disabled, #demoV2vBtn:disabled { opacity: 0.55; cursor: not-allowed; }
     .voice-hint {
       text-align: center;
       color: var(--muted);
       font-size: 0.72rem;
       margin: 0.25rem 0 0.5rem;
-      min-height: 1.2em;
+      min-height: 1.35em;
       line-height: 1.35;
     }
+    .opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 0.35rem 0 0.55rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .opts label { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; }
     .composer {
       display: flex;
       gap: 0.45rem;
@@ -162,8 +170,8 @@
   <div class="phone">
     <div class="orb" id="orb" aria-hidden="true"></div>
     <h1>Alexa+ Chat · DOC Watch</h1>
-    <div class="sub">Alexa+ is the chat client · DOC Watch is MCP tools</div>
-    <div class="badge">Hackathon path: simulate Alexa+ chat in this web app · MCP Streamable HTTP 2025-11-25</div>
+    <div class="sub">Alexa+ chat client · DOC Watch MCP tools</div>
+    <div class="badge">V2V = talk → Alexa+ chat → spoken reply. Prefer Edge if Chrome mic shows network error.</div>
     <div class="chat" id="chat" aria-live="polite"></div>
     <div class="chips">
       <button type="button" data-q="Alexa, coastal advisories for Rochester?">Coastal advisories</button>
@@ -172,12 +180,16 @@
       <button type="button" data-q="Give me a sixty-second briefing.">60s briefing</button>
       <button type="button" data-q="What's the forecast for Buffalo tonight?">Buffalo forecast</button>
       <button type="button" data-q="Show my Alexa+ sensors.">Alexa+ sensors</button>
-      <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="speakToggle" checked /> Speak Alexa+ replies</label>
+      <label><input type="checkbox" id="convToggle" checked /> Keep conversation (listen again)</label>
     </div>
     <div class="voice-row">
       <button type="button" id="voiceBtn" aria-pressed="false">🎙 Talk to Alexa+ chat</button>
+      <button type="button" id="demoV2vBtn" class="secondary" title="Reliable for demo video if mic STT fails">▶ Demo v2v (3 turns)</button>
     </div>
-    <div class="voice-hint" id="voiceHint">Voice goes into Alexa+ chat (MCP client path). Tap once, speak, then Alexa+ replies here — not browser text-to-speech.</div>
+    <div class="voice-hint" id="voiceHint">Tap Talk for live mic → Alexa+ chat. If you see mic network error, use Demo v2v or Edge, or type — replies still speak.</div>
     <form class="composer" id="form">
       <input id="input" placeholder="Message Alexa+ chat…" autocomplete="off" />
       <button type="submit">Send</button>
@@ -189,13 +201,24 @@
     const form = document.getElementById("form");
     const input = document.getElementById("input");
     const voiceBtn = document.getElementById("voiceBtn");
+    const demoV2vBtn = document.getElementById("demoV2vBtn");
     const voiceHint = document.getElementById("voiceHint");
     const orb = document.getElementById("orb");
+    const speakToggle = document.getElementById("speakToggle");
+    const convToggle = document.getElementById("convToggle");
 
     let lastLocation = "rochester";
     let busy = false;
     let listening = false;
+    let stopConversation = false;
+    let activeRec = null;
     const history = [];
+
+    const DEMO_TURNS = [
+      "Alexa, coastal advisories for Rochester?",
+      "Any freeze or flood risk in the next twelve hours?",
+      "Give me a sixty-second briefing.",
+    ];
 
     function add(role, text, trace) {
       const el = document.createElement("div");
@@ -219,8 +242,59 @@
 
     add(
       "alexa",
-      "Hi — this is Alexa+ chat with DOC Watch. I call DOC Watch MCP tools for coastal advisories, forecast, and Alexa+ sensors. Ask by voice or text."
+      "Hi — Alexa+ chat with DOC Watch. For the demo video: tap Talk, or if mic STT fails tap Demo v2v for a spoken three-turn conversation through Alexa+ chat."
     );
+
+    function speakAlexaReply(text) {
+      return new Promise((resolve) => {
+        if (!speakToggle.checked || !window.speechSynthesis) {
+          resolve();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const clean = String(text || "")
+          .replace(/https?:\/\/\S+/gi, "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 1400);
+        if (!clean) {
+          resolve();
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "en-US";
+        u.rate = 0.98;
+        u.pitch = 1.0;
+        const voices = window.speechSynthesis.getVoices() || [];
+        const pick =
+          voices.find((v) => /en(-|_)/i.test(v.lang) && /natural|neural|aria|jenny|zira|google us english/i.test(v.name)) ||
+          voices.find((v) => /en(-|_)/i.test(v.lang));
+        if (pick) u.voice = pick;
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          orb.classList.remove("speaking");
+          resolve();
+        };
+        u.onend = done;
+        u.onerror = done;
+        orb.classList.add("speaking");
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.speak(u);
+            window.speechSynthesis.resume();
+          } catch (_) {
+            done();
+          }
+        }, 80);
+      });
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
 
     async function alexaChat(message) {
       const res = await fetch("/api/alexa-chat", {
@@ -238,33 +312,47 @@
       return data;
     }
 
-    async function sendToAlexaPlus(message) {
+    async function sendToAlexaPlus(message, opts) {
       const q = String(message || "").trim();
+      const fromVoice = !!(opts && opts.fromVoice);
+      const skipListenAgain = !!(opts && opts.skipListenAgain);
       if (!q || busy) return;
       busy = true;
       voiceBtn.disabled = true;
+      demoV2vBtn.disabled = true;
       add("user", q);
       history.push({ role: "user", text: q });
       add("alexa", "Checking DOC Watch…");
       try {
         const data = await alexaChat(q);
         chat.removeChild(chat.lastChild);
-        const tools = (data.toolsCalled || [])
-          .map((t) => t.name)
-          .join(", ");
+        const tools = (data.toolsCalled || []).map((t) => t.name).join(", ");
         const trace = tools
-          ? "MCP tools: " + tools + (data.simulatedAlexaPlus ? " · local Alexa+ chat sim" : "")
-          : data.simulatedAlexaPlus ? "local Alexa+ chat sim" : "";
-        add("alexa", data.reply || "(no reply)", trace);
-        history.push({ role: "alexa", text: data.reply || "" });
-        voiceHint.textContent = "Alexa+ chat replied. Tap Talk to Alexa+ chat for another voice turn.";
+          ? "MCP tools: " + tools + " · Alexa+ chat"
+          : "Alexa+ chat";
+        const reply = data.reply || "(no reply)";
+        add("alexa", reply, trace);
+        history.push({ role: "alexa", text: reply });
+        voiceHint.textContent = "Alexa+ chat replied — speaking…";
+        await speakAlexaReply(reply);
+        voiceHint.textContent = fromVoice
+          ? "Your turn. Listening again…"
+          : "Alexa+ chat ready. Tap Talk or Demo v2v.";
+        if (fromVoice && convToggle.checked && !skipListenAgain && !stopConversation) {
+          busy = false;
+          voiceBtn.disabled = false;
+          demoV2vBtn.disabled = false;
+          setTimeout(() => startListening({ continueConv: true }), 350);
+          return;
+        }
       } catch (e) {
         chat.removeChild(chat.lastChild);
         add("alexa", "Sorry — Alexa+ chat hit an error: " + (e.message || e));
-        voiceHint.textContent = "Chat error. Try a chip or type again.";
+        voiceHint.textContent = "Chat error. Try Demo v2v, a chip, or type.";
       } finally {
         busy = false;
         voiceBtn.disabled = false;
+        demoV2vBtn.disabled = false;
         setListening(false);
       }
     }
@@ -274,85 +362,190 @@
       voiceBtn.classList.toggle("listening", on);
       orb.classList.toggle("listening", on);
       voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      voiceBtn.textContent = on ? "● Listening… tap to cancel" : "🎙 Talk to Alexa+ chat";
+      voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Talk to Alexa+ chat";
+    }
+
+    function abortListening() {
+      try {
+        if (activeRec) {
+          activeRec.onresult = null;
+          activeRec.onerror = null;
+          activeRec.onend = null;
+          activeRec.abort();
+        }
+      } catch (_) {}
+      activeRec = null;
+      setListening(false);
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      voiceBtn.disabled = true;
-      voiceHint.textContent = "Voice needs Chrome/Edge. Type or use chips — still goes to Alexa+ chat.";
-    } else {
-      voiceBtn.addEventListener("click", () => {
-        if (busy) return;
-        if (listening) {
-          setListening(false);
-          voiceHint.textContent = "Cancelled. Type below or tap Talk to Alexa+ chat again.";
-          return;
+    async function prepareOnDevice() {
+      if (!SpeechRecognition || typeof SpeechRecognition.available !== "function") {
+        return false;
+      }
+      try {
+        let status = await SpeechRecognition.available({ langs: ["en-US"], processLocally: true });
+        if (status === "downloadable" && typeof SpeechRecognition.install === "function") {
+          voiceHint.textContent = "Installing on-device speech (fixes network STT)…";
+          await SpeechRecognition.install({ langs: ["en-US"], processLocally: true });
+          status = await SpeechRecognition.available({ langs: ["en-US"], processLocally: true });
         }
+        return status === "available";
+      } catch (_) {
+        return false;
+      }
+    }
 
+    let onDeviceReady = null;
+
+    function startListening(opts) {
+      const continueConv = !!(opts && opts.continueConv);
+      if (!SpeechRecognition) {
+        voiceHint.textContent = "No browser STT. Use Demo v2v for the video, or type.";
+        return;
+      }
+      if (busy && !continueConv) return;
+      if (listening) {
+        stopConversation = true;
+        abortListening();
+        voiceHint.textContent = "Stopped. Tap Talk or Demo v2v.";
+        return;
+      }
+      stopConversation = false;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+      const begin = (useLocal) => {
         const rec = new SpeechRecognition();
+        activeRec = rec;
         rec.lang = "en-US";
         rec.interimResults = false;
         rec.maxAlternatives = 1;
         rec.continuous = false;
+        if ("processLocally" in rec) rec.processLocally = !!useLocal;
 
         let done = false;
         rec.onstart = () => {
           setListening(true);
-          voiceHint.textContent = "Listening for Alexa+ chat… speak your question.";
+          voiceHint.textContent = useLocal
+            ? "Listening on-device → Alexa+ chat…"
+            : "Listening → Alexa+ chat… speak now.";
         };
         rec.onerror = (ev) => {
           if (ev.error === "aborted") return;
           done = true;
           setListening(false);
+          activeRec = null;
           if (ev.error === "network") {
-            voiceHint.textContent = "Mic STT network error. Type into Alexa+ chat instead — same MCP path.";
-            input.focus();
+            voiceHint.textContent =
+              "Mic STT network error (browser cloud). For the demo video use ▶ Demo v2v — same Alexa+ chat path, spoken replies.";
+            // One automatic fallback: try on-device if we haven't yet.
+            if (!useLocal) {
+              prepareOnDevice().then((ok) => {
+                if (ok) {
+                  voiceHint.textContent = "Retrying with on-device speech…";
+                  setTimeout(() => startListening(opts), 400);
+                }
+              });
+            }
           } else if (ev.error === "not-allowed") {
             voiceHint.textContent = "Allow microphone for 127.0.0.1, then try again.";
           } else if (ev.error === "no-speech") {
-            voiceHint.textContent = "No speech heard. Tap Talk to Alexa+ chat once more.";
+            voiceHint.textContent = "No speech heard. Tap Talk again.";
+            if (continueConv && convToggle.checked && !stopConversation) {
+              setTimeout(() => startListening({ continueConv: true }), 500);
+            }
+          } else if (ev.error === "language-not-supported") {
+            voiceHint.textContent = "On-device English pack missing. Use Demo v2v or type.";
           } else {
-            voiceHint.textContent = "Mic error (" + ev.error + "). Use chips or type into Alexa+ chat.";
+            voiceHint.textContent = "Mic error (" + ev.error + "). Use Demo v2v for the video.";
           }
         };
         rec.onend = () => {
           if (!busy) setListening(false);
+          if (activeRec === rec) activeRec = null;
         };
         rec.onresult = (ev) => {
           if (done) return;
           done = true;
           const transcript = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
           setListening(false);
+          activeRec = null;
           if (!transcript) {
-            voiceHint.textContent = "Did not catch that. Try again or type.";
+            voiceHint.textContent = "Did not catch that.";
             return;
           }
           input.value = transcript;
           voiceHint.textContent = "Sending to Alexa+ chat…";
-          sendToAlexaPlus(transcript);
+          sendToAlexaPlus(transcript, { fromVoice: true });
         };
 
         try {
           rec.start();
         } catch (_) {
           setListening(false);
-          voiceHint.textContent = "Could not start mic. Reload, then tap once.";
+          voiceHint.textContent = "Could not start mic. Use Demo v2v.";
         }
-      });
+      };
+
+      if (onDeviceReady === null) {
+        voiceHint.textContent = "Preparing speech…";
+        prepareOnDevice().then((ok) => {
+          onDeviceReady = ok;
+          begin(ok);
+        });
+      } else {
+        begin(!!onDeviceReady);
+      }
     }
+
+    if (!SpeechRecognition) {
+      voiceBtn.disabled = true;
+      voiceHint.textContent = "Browser STT unavailable. Use ▶ Demo v2v for a spoken Alexa+ chat conversation.";
+    } else {
+      voiceBtn.addEventListener("click", () => startListening({}));
+    }
+
+    demoV2vBtn.addEventListener("click", async () => {
+      if (busy) return;
+      stopConversation = true;
+      abortListening();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      speakToggle.checked = true;
+      voiceHint.textContent = "Running demo v2v through Alexa+ chat…";
+      demoV2vBtn.disabled = true;
+      voiceBtn.disabled = true;
+      try {
+        for (let i = 0; i < DEMO_TURNS.length; i++) {
+          voiceHint.textContent = "Demo turn " + (i + 1) + " of " + DEMO_TURNS.length + "…";
+          // Show user line as spoken intent for the camera.
+          await speakAlexaReply("You asked: " + DEMO_TURNS[i]);
+          await sendToAlexaPlus(DEMO_TURNS[i], { fromVoice: false, skipListenAgain: true });
+          await new Promise((r) => setTimeout(r, 400));
+        }
+        voiceHint.textContent = "Demo v2v complete — three Alexa+ chat turns spoken.";
+      } finally {
+        demoV2vBtn.disabled = false;
+        voiceBtn.disabled = false;
+      }
+    });
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const q = input.value.trim();
       if (!q) return;
       input.value = "";
-      sendToAlexaPlus(q);
+      stopConversation = true;
+      abortListening();
+      sendToAlexaPlus(q, { fromVoice: false });
     });
 
     document.querySelectorAll(".chips button").forEach((btn) => {
-      btn.addEventListener("click", () => sendToAlexaPlus(btn.getAttribute("data-q")));
+      btn.addEventListener("click", () => {
+        stopConversation = true;
+        abortListening();
+        sendToAlexaPlus(btn.getAttribute("data-q"), { fromVoice: false });
+      });
     });
   </script>
 </body>
