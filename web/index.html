@@ -137,8 +137,8 @@
   <div class="phone">
     <div class="orb" id="orb" aria-hidden="true"></div>
     <h1>Alexa+ · DOC Watch</h1>
-    <div class="sub">Simulated Agent Skill · MCP-backed</div>
-    <div class="badge">SIMULATION: Alexa+ sensors · live NWS</div>
+    <div class="sub">Alexa+ Agent Skill sim · MCP tools · live NWS</div>
+    <div class="badge">Voice-to-voice = Alexa+ · this page is the local sim</div>
     <div class="chat" id="chat"></div>
     <div class="chips">
       <button type="button" data-q="Alexa, coastal advisories for Rochester?">Coastal advisories</button>
@@ -150,14 +150,14 @@
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
     <div class="voice-row">
-      <button type="button" id="voiceBtn" aria-pressed="false" title="Speak your question">🎙 Voice to voice</button>
+      <button type="button" id="voiceBtn" aria-pressed="false" title="Local stand-in for Alexa+ voice turn">🎙 Alexa+ voice (sim)</button>
       <button type="button" id="speakLastBtn" title="Speak the last DOC reply" style="background:#1c2433;color:var(--text)">🔊 Speak reply</button>
     </div>
     <label class="voice-hint" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;cursor:pointer">
       <input type="checkbox" id="speakToggle" checked />
-      Always speak DOC replies (works even if mic STT fails)
+      Speak replies (simulates Alexa+ voice out)
     </label>
-    <div class="voice-hint" id="voiceHint">Tap Voice to voice: speak, then DOC replies out loud. Needs internet for browser speech-to-text.</div>
+    <div class="voice-hint" id="voiceHint">Product v2v is Alexa+ → MCP. This button is a local sim when an Alexa+ device session is not linked.</div>
     <form class="composer" id="form">
       <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
       <button type="submit">Ask</button>
@@ -193,7 +193,7 @@
       window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
 
-    add("agent", "Hi. I'm DOC Watch on Alexa+. Tap Voice to voice to speak, or type/chips with Always speak replies on. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
+    add("agent", "Hi. I'm DOC Watch for Alexa+. Real voice-to-voice runs through Alexa-plus calling these MCP tools. This page simulates that loop locally. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
     lastAgentReply = chat.querySelector(".agent") ? chat.querySelector(".agent").textContent : "";
 
     function pickLocation(s) {
@@ -311,9 +311,9 @@
       voiceBtn.classList.toggle("listening", on);
       orb.classList.toggle("listening", on);
       voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Voice to voice";
+      voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Alexa+ voice (sim)";
       if (on) {
-        voiceHint.textContent = "Listening. Speak your question clearly.";
+        voiceHint.textContent = "Sim listening (stand-in for Alexa+). Speak your question clearly.";
       }
     }
 
@@ -327,7 +327,7 @@
         return "Microphone blocked. Click the lock icon in the address bar → allow Microphone for 127.0.0.1, then reload.";
       }
       if (code === "network") {
-        return "Browser speech-to-text needs internet (cloud STT). Check Wi‑Fi, then retry Voice to voice — or type/chips with Always speak replies ON (Speak reply still works offline).";
+        return "Local sim mic STT needs internet. Product v2v is Alexa+ → MCP (not this browser). Use chips/type with Speak replies ON, or Speak reply.";
       }
       if (code === "no-speech") {
         return "No speech heard. Tap Voice to voice and speak closer to the mic.";
@@ -338,7 +338,7 @@
       if (code === "aborted") {
         return "Listening stopped.";
       }
-      return "Voice error: " + (code || "unknown") + ". Try Chrome/Edge, or type below with Always speak replies ON.";
+      return "Sim mic error: " + (code || "unknown") + ". Product path is Alexa+. Use chips/type with Speak replies ON.";
     }
 
     function startListening() {

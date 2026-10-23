@@ -6,6 +6,8 @@
 
 Primary hackathon track: **Alexa+**. Layered: AWS Builder mini-challenge + Open Source (MIT).
 
+**Voice-to-voice = Alexa+.** Alexa+ is the conversational LLM and spoken path; DOC Watch is the MCP tool server (NWS facts, coastal advisories, sensors). The local `/index.html` page simulates that Alexa+ ↔ MCP loop for demos when a live Alexa+ device session is not linked.
+
 ## What ships tonight
 
 A self-hosted **MCP server** (spec **2025-11-25+**, **Streamable HTTP**) that exposes coastal-advisory intelligence as Alexa+ Agent Skills, plus a thin web playground and a simulated Alexa+ chat.
