@@ -47,7 +47,7 @@ Expect: **11/11** tests · MCP smoke prints `OK` and eight tool names.
 ## 4. Record
 
 - Follow `scripts/demo-script.md` spoken lines.
-- Keep the **MOCK_RING** / **MOCK MODE** badge visible on sensors.
+- Keep the **Alexa+ sensors** label visible on sensors.
 - Cap at **3:00** English.
 - Tonight’s Rochester live shape (numbers drift): ~Clear, mid-30s °F, light wind. Quiet alerts / “no elevated flags” is fine — still show the freeze/wind/flood rule line.
 

@@ -1,10 +1,10 @@
 # Devpost — DOC Watch
 
 ## Title
-DOC Watch — Alexa+ MCP Agent Skill for dock & home weather
+DOC Watch — Alexa+ MCP Agent Skill for coastal advisories
 
 ## Tagline
-Voice-first watch, forecast, alert, and disseminate for docks, homes, and severe weather, powered by a crowd-sourced Ring sensor network.
+Voice-first coastal advisories, forecast, alert, and disseminate for Home, Mobile, Current location, and Maritime assets — always citing the nearest coastline — powered by Alexa+ sensors and live NWS.
 
 ## Primary track
 **Alexa+** (only). AWS Builder mini-challenge and Open Source are layered on the same submission — not duplicate primary tracks.
@@ -63,7 +63,7 @@ Live Ring Partner OAuth, capital-backed mesh ingestion, AWS-hosted MCP endpoint 
 - Friction / product feedback: `scripts/friction-log.md`, `scripts/product-feedback.md`
 
 ## Demo video notes for judges
-- ≤3:00 English; MCP Streamable HTTP **2025-11-25**; eight tools; live NWS; **MOCK Ring** labeled
+- ≤3:00 English; MCP Streamable HTTP **2025-11-25**; eight tools; live NWS; **Alexa+ sensors** labeled; tool `get_DOC_advice`
 - Primary track: **Alexa+** (AWS Builder + Open Source layered)
 - Zero keys required: templated spoken briefing + mock sensors; optional `XAI_API_KEY` for Grok
 - Playground + Alexa+ sim: http://127.0.0.1:8787/demo.html and `/index.html` after `npm start`

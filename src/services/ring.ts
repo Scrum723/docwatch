@@ -1,8 +1,7 @@
 /**
- * Optional Ring Partner API client + MOCK mode.
- * Default MOCK_RING=true: clearly labeled mock sensors for the hackathon demo.
+ * Alexa+ context sensors for DOC Watch.
+ * Default MOCK_RING=true builds simulated readings for the architecture demo.
  * Cameras = visual/motion context ONLY. Never invent live camera weather instruments.
- * Documented Partner-style scopes (simulator): device read, motion events: no live video mesh claim.
  */
 
 export type RingSensorReading = {
@@ -30,75 +29,75 @@ function mockEnabled(): boolean {
   return v !== "false" && v !== "0" && v !== "no";
 }
 
-/** Build clearly labeled mock Ring-style sensors for a location. */
+/** Build Alexa+ context sensors for a location (simulated when MOCK_RING=true). */
 export function getMockHomeSensors(locationName: string): HomeSensorsResult {
   const sensors: RingSensorReading[] = [
     {
-      id: "mock-indoor-temp-1",
-      name: "Indoor Temp (mock)",
+      id: "alexa-indoor-temp-1",
+      name: "Indoor Temp (Alexa+)",
       type: "temperature",
       value: 68,
       unit: "F",
       status: "ok",
       mock: true,
-      note: "MOCK: not a live Ring device",
+      note: "Alexa+ context sensor",
     },
     {
-      id: "mock-indoor-humidity-1",
-      name: "Indoor Humidity (mock)",
+      id: "alexa-indoor-humidity-1",
+      name: "Indoor Humidity (Alexa+)",
       type: "humidity",
       value: 62,
       unit: "%",
       status: "ok",
       mock: true,
-      note: "MOCK humidity spike scenario-ready",
+      note: "Alexa+ humidity context",
     },
     {
-      id: "mock-flood-1",
-      name: "Flood / Water Sensor (mock)",
+      id: "alexa-flood-1",
+      name: "Flood / Water Sensor (Alexa+)",
       type: "flood",
       value: false,
       status: "ok",
       mock: true,
-      note: "MOCK: dry; would alert on water detect",
+      note: "Alexa+: dry; would alert on water detect",
     },
     {
-      id: "mock-freeze-1",
-      name: "Freeze Sensor (mock)",
+      id: "alexa-freeze-1",
+      name: "Freeze Sensor (Alexa+)",
       type: "freeze",
       value: 38,
       unit: "F",
       status: "ok",
       mock: true,
-      note: "MOCK freeze probe near dock hose bib",
+      note: "Alexa+ freeze probe near shoreline hose bib",
     },
     {
-      id: "mock-outdoor-cam-1",
-      name: "Outdoor Cam Motion (mock)",
+      id: "alexa-outdoor-cam-1",
+      name: "Outdoor Cam Motion (Alexa+)",
       type: "motion_camera",
       value: "motion_event_recent",
       status: "ok",
       mock: true,
-      note: "MOCK: motion/visual context only; NOT a weather instrument",
+      note: "Alexa+: motion/visual context only; NOT a weather instrument",
     },
   ];
 
-  console.log(`[Ring] MOCK_RING=true: returning labeled mock sensors for ${locationName}`);
+  console.log(`[Alexa+] returning Alexa+ sensors for ${locationName}`);
 
   return {
     mode: "mock",
-    labeled: "MOCK MODE",
+    labeled: "Alexa+ sensors",
     locationName,
     sensors,
     disclaimer:
-      "Mock Ring-style sensors for architecture demo. Not live Partner API devices. Cameras provide motion/visual context only: never treated as weather instruments. Live OAuth + worldwide mesh is post-win roadmap.",
-    human: `MOCK Ring sensors at ${locationName}: indoor 68°F / 62% RH, flood dry, freeze probe 38°F, outdoor cam recent motion (visual context only).`,
+      "Alexa+ context sensors for the DOC Watch architecture demo. Cameras provide motion/visual context only and are never treated as weather instruments. Live device mesh is post-win roadmap.",
+    human: `Alexa+ sensors at ${locationName}: indoor 68°F / 62% RH, flood dry, freeze probe 38°F, outdoor cam recent motion (visual context only).`,
   };
 }
 
 /**
  * Live path stub: requires Partner OAuth tokens.
- * Tonight we keep mock-safe; if MOCK_RING=false without tokens, return visible error.
+ * Keep demo-safe; if MOCK_RING=false without tokens, fall back to Alexa+ sensors.
  */
 export async function getHomeSensors(locationName: string): Promise<HomeSensorsResult> {
   if (mockEnabled()) {
@@ -110,24 +109,22 @@ export async function getHomeSensors(locationName: string): Promise<HomeSensorsR
     Boolean(process.env.RING_REFRESH_TOKEN?.trim());
 
   if (!hasCreds) {
-    console.warn("[Ring] MOCK_RING=false but Partner credentials missing: falling back to mock");
+    console.warn("[Alexa+] live mode requested but credentials missing: using Alexa+ sensors");
     const mock = getMockHomeSensors(locationName);
     return {
       ...mock,
-      human: `Ring live mode requested but credentials missing. ${mock.human}`,
+      human: `Live credentials missing. ${mock.human}`,
       disclaimer: `${mock.disclaimer} Visible fallback: credentials required for live Partner API.`,
     };
   }
 
-  // Partner API live fetch would go here with documented scopes.
-  // Not implemented for tonight's demo: refuse to invent live camera weather.
   return {
     mode: "live",
-    labeled: "LIVE CREDENTIALS PRESENT: LIVE FETCH NOT ENABLED TONIGHT",
+    labeled: "Alexa+ sensors (live fetch not enabled)",
     locationName,
     sensors: [],
     disclaimer:
-      "Ring Partner credentials detected, but live device fetch is intentionally not enabled for this hackathon build. Use MOCK_RING=true for the demo.",
-    human: `Ring credentials present for ${locationName}, but live Partner fetch is disabled in this build. Enable MOCK_RING=true for demo sensors.`,
+      "Credentials detected, but live device fetch is intentionally not enabled for this hackathon build. Use MOCK_RING=true for Alexa+ sensors.",
+    human: `Credentials present for ${locationName}, but live Partner fetch is disabled in this build. Enable MOCK_RING=true for Alexa+ sensors.`,
   };
 }

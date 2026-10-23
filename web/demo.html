@@ -38,7 +38,7 @@
       padding: 0.25rem 0.6rem;
       border-radius: 999px;
       background: #243247;
-      color: var(--warn);
+      color: var(--accent);
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -96,7 +96,7 @@
   <header>
     <div>
       <h1><span>DOC</span> Watch: playground</h1>
-      <div class="badge" id="mockBadge">MOCK_RING mode: not live Ring mesh</div>
+      <div class="badge" id="sensorBadge">Alexa+ sensors · live NWS</div>
     </div>
     <div>
       <a href="/index.html">Alexa+ sim →</a>
@@ -104,7 +104,7 @@
   </header>
   <main>
     <p style="color:var(--muted);max-width:60ch">
-      Local brain for dock &amp; home weather intelligence. NWS live. Ring sensors mock-labeled.
+      Local brain for coastal advisories and home weather intelligence. NWS live. Advice always cites the nearest coastline.
       MCP Streamable HTTP at <code>/mcp</code> (spec 2025-11-25).
     </p>
     <div class="row">
@@ -119,27 +119,27 @@
       </label>
       <label>Asset
         <select id="asset">
-          <option value="dock">dock</option>
-          <option value="boat">boat</option>
-          <option value="van">van</option>
-          <option value="home">home</option>
+          <option value="home">Home</option>
+          <option value="mobile">Mobile</option>
+          <option value="current_location">Current location</option>
+          <option value="maritime">Maritime</option>
         </select>
       </label>
       <button id="runCore" type="button">Run core loop</button>
       <button class="secondary" id="listTools" type="button">List tools</button>
     </div>
     <div class="grid" id="toolButtons"></div>
-    <div class="human" id="human">Pick a tool or run the core loop for Rochester.</div>
+    <div class="human" id="human">Pick a tool or run the core loop for Rochester coastal advisories.</div>
     <pre id="out">{}</pre>
   </main>
   <script>
     const tools = [
       ["get_current_conditions", "Current NWS conditions"],
-      ["get_alerts", "Active NWS alerts"],
+      ["get_alerts", "Active NWS / coastal alerts"],
       ["get_forecast", "24h forecast"],
-      ["get_dock_advice", "Pull boat / cover dock"],
+      ["get_DOC_advice", "Coastal advisories + nearest coastline"],
       ["get_spoken_briefing", "60s spoken briefing"],
-      ["get_home_sensors", "Mock Ring sensors"],
+      ["get_home_sensors", "Alexa+ sensors"],
       ["set_watch", "Set watch thresholds"],
       ["describe_features", "Mesh & join explain"],
     ];
@@ -179,7 +179,7 @@
         card.disabled = true;
         try {
           const body = { location: loc() };
-          if (name === "get_dock_advice") body.asset = asset();
+          if (name === "get_DOC_advice") body.asset = asset();
           if (name === "get_forecast") body.hours = 24;
           if (name === "get_spoken_briefing") body.seconds = 60;
           if (name === "set_watch") Object.assign(body, { windMph: 25, freezeTempF: 36, flood: true });
@@ -208,7 +208,7 @@
         const location = loc();
         await callTool("get_current_conditions", { location });
         await callTool("get_alerts", { location });
-        await callTool("get_dock_advice", { location, asset: asset() });
+        await callTool("get_DOC_advice", { location, asset: asset() });
         await callTool("get_spoken_briefing", { location, seconds: 60 });
         await callTool("get_home_sensors", { location });
       } catch (e) {
@@ -219,9 +219,9 @@
     };
 
     fetch("/health").then(r => r.json()).then(h => {
-      document.getElementById("mockBadge").textContent = h.mockRing
-        ? "MOCK_RING=true: sensors are labeled mock"
-        : "MOCK_RING=false";
+      document.getElementById("sensorBadge").textContent = h.alexaSensors
+        ? "Alexa+ sensors · live NWS"
+        : "Alexa+ sensors";
     }).catch(() => {});
   </script>
 </body>

@@ -1,24 +1,26 @@
 /**
- * Dock / home risk rules for DOC Watch.
+ * DOC Watch coastal / home risk rules.
  * Freeze: temp ≤ 36°F or freeze-related NWS alert
  * Wind: gusts ≥ 25 mph
- * Flood / heavy rain: from NWS alerts
+ * Flood / heavy rain / coastal: from NWS alerts
+ * Advice always cites the nearest coastline for the resolved place.
  */
 
 import type { NwsAlert, NwsConditions, NwsForecast } from "./nws.js";
 import { parseWindGustMph } from "./nws.js";
 import { buildAdviceHuman } from "./spoken.js";
 
-export type Asset = "dock" | "boat" | "van" | "home";
+export type Asset = "home" | "mobile" | "current_location" | "maritime";
 
 export type RiskFlag = {
-  type: "freeze" | "wind" | "flood" | "severe" | "heavy_rain";
+  type: "freeze" | "wind" | "flood" | "severe" | "heavy_rain" | "coastal";
   level: "watch" | "warning" | "advisory" | "elevated";
   reason: string;
 };
 
-export type DockAdviceResult = {
+export type DocAdviceResult = {
   locationName: string;
+  nearestCoastline: string;
   asset: Asset;
   risks: RiskFlag[];
   actions: string[];
@@ -31,35 +33,55 @@ export type DockAdviceResult = {
   };
 };
 
+/** @deprecated use DocAdviceResult */
+export type DockAdviceResult = DocAdviceResult;
+
 const FREEZE_TEMP_F = 36;
 const WIND_GUST_MPH = 25;
 
 const FREEZE_EVENTS = /freeze|frost|winter storm|cold|ice storm|wind chill/i;
 const FLOOD_EVENTS = /flood|flash flood|coastal flood|lakeshore flood/i;
+const COASTAL_EVENTS =
+  /coastal|lakeshore|marine|gale|small craft|beach hazard|rip current|surf|high surf|storm surge/i;
 const RAIN_EVENTS = /heavy rain|excessive rainfall|flash flood watch/i;
 const SEVERE_EVENTS = /tornado|severe thunderstorm|high wind|hurricane|blizzard/i;
 const WIND_EVENTS = /high wind|wind advisory|gale|storm warning/i;
 
-export function evaluateDockAdvice(input: {
+const ASSET_ALIASES: Record<string, Asset> = {
+  home: "home",
+  mobile: "mobile",
+  current_location: "current_location",
+  "current location": "current_location",
+  maritime: "maritime",
+  // legacy playground values
+  dock: "maritime",
+  boat: "maritime",
+  van: "mobile",
+};
+
+export function normalizeAsset(raw?: string | null): Asset {
+  if (!raw) return "maritime";
+  const key = raw.trim().toLowerCase().replace(/-/g, "_");
+  return ASSET_ALIASES[key] ?? ASSET_ALIASES[key.replace(/_/g, " ")] ?? "maritime";
+}
+
+export function evaluateDocAdvice(input: {
   locationName: string;
+  nearestCoastline: string;
   asset: Asset;
   conditions: NwsConditions;
   forecast: NwsForecast;
   alerts: NwsAlert[];
-}): DockAdviceResult {
+}): DocAdviceResult {
   const risks: RiskFlag[] = [];
   const actions = new Set<string>();
 
   const temp = input.conditions.temperatureF;
   let gust = input.conditions.windGustMph ?? input.conditions.windMph;
 
-  // Scan forecast for colder temps / stronger winds in next periods
   for (const p of input.forecast.periods) {
     const unit = (p.temperatureUnit || "F").toUpperCase();
     const tF = unit === "C" ? Math.round((p.temperature * 9) / 5 + 32) : p.temperature;
-    if (temp == null || tF < temp) {
-      // track min later via freeze check
-    }
     if (tF <= FREEZE_TEMP_F) {
       risks.push({
         type: "freeze",
@@ -110,6 +132,13 @@ export function evaluateDockAdvice(input: {
         reason: `NWS alert: ${a.headline || event}`,
       });
     }
+    if (COASTAL_EVENTS.test(event)) {
+      risks.push({
+        type: "coastal",
+        level: /warning/i.test(event) ? "warning" : /advisory/i.test(event) ? "advisory" : "watch",
+        reason: `NWS coastal advisory: ${a.headline || event}`,
+      });
+    }
     if (RAIN_EVENTS.test(event) && !FLOOD_EVENTS.test(event)) {
       risks.push({
         type: "heavy_rain",
@@ -133,7 +162,6 @@ export function evaluateDockAdvice(input: {
     }
   }
 
-  // Deduplicate risk types keeping highest severity-ish first
   const deduped: RiskFlag[] = [];
   const seen = new Set<string>();
   for (const r of risks) {
@@ -144,51 +172,54 @@ export function evaluateDockAdvice(input: {
   }
 
   const has = (t: RiskFlag["type"]) => deduped.some((r) => r.type === t);
+  const asset = input.asset;
 
-  // Asset-specific actions
   if (has("freeze")) {
     actions.add("watch freeze");
-    if (input.asset === "boat" || input.asset === "dock") {
+    if (asset === "maritime") {
       actions.add("pull small craft");
       actions.add("add lines");
-      actions.add("cover dock");
+      actions.add("secure shoreline gear");
     }
-    if (input.asset === "home") actions.add("secure loose gear");
-    if (input.asset === "van") actions.add("move van from trees");
+    if (asset === "home" || asset === "current_location") actions.add("secure loose gear");
+    if (asset === "mobile") actions.add("move vehicle from trees");
   }
-  if (has("wind") || has("severe")) {
-    actions.add("add lines");
+  if (has("wind") || has("severe") || has("coastal")) {
     actions.add("secure loose gear");
-    if (input.asset === "boat") actions.add("pull small craft");
-    if (input.asset === "van" || input.asset === "home") actions.add("move van from trees");
-    if (input.asset === "dock") actions.add("cover dock");
+    if (asset === "maritime") {
+      actions.add("add lines");
+      actions.add("pull small craft");
+      actions.add("heed coastal advisories");
+    }
+    if (asset === "mobile") actions.add("move vehicle from trees");
+    if (asset === "home" || asset === "current_location") actions.add("heed coastal advisories");
   }
   if (has("flood") || has("heavy_rain")) {
     actions.add("watch flood");
-    if (input.asset === "boat") actions.add("pull small craft");
-    if (input.asset === "van") actions.add("move van from trees");
-    if (input.asset === "dock") {
+    if (asset === "maritime") {
+      actions.add("pull small craft");
       actions.add("add lines");
-      actions.add("cover dock");
     }
+    if (asset === "mobile") actions.add("move vehicle from trees");
   }
 
   if (actions.size === 0) {
     actions.add("stay weather-aware");
-    actions.add("secure loose gear");
+    actions.add("check coastal advisories");
   }
 
-  // Cap to a clear action list
   const actionList = [...actions].slice(0, 5);
   const hasElevated = deduped.length > 0;
   const riskLabels = hasElevated
     ? deduped.map((r) => `${r.type} (${r.level})`).join(", ")
-    : "no elevated freeze/wind/flood flags";
+    : "no elevated freeze/wind/flood/coastal flags";
 
-  const summary = `DOC Watch ${input.asset} advice for ${input.locationName}: ${riskLabels}. Actions: ${actionList.join("; ")}.`;
+  const coastline = input.nearestCoastline || "nearest mapped coastline";
+  const summary = `DOC Watch ${asset} coastal advisories for ${input.locationName} (nearest coastline: ${coastline}): ${riskLabels}. Actions: ${actionList.join("; ")}.`;
   const human = buildAdviceHuman({
     locationName: input.locationName,
-    asset: input.asset,
+    nearestCoastline: coastline,
+    asset,
     riskLabels,
     hasElevated,
     actions: actionList,
@@ -196,7 +227,8 @@ export function evaluateDockAdvice(input: {
 
   return {
     locationName: input.locationName,
-    asset: input.asset,
+    nearestCoastline: coastline,
+    asset,
     risks: deduped,
     actions: actionList,
     summary,
@@ -207,4 +239,15 @@ export function evaluateDockAdvice(input: {
       alertEvents: input.alerts.map((a) => a.event),
     },
   };
+}
+
+/** @deprecated prefer evaluateDocAdvice */
+export function evaluateDockAdvice(
+  input: Parameters<typeof evaluateDocAdvice>[0] & { nearestCoastline?: string; asset: Asset | string }
+): DocAdviceResult {
+  return evaluateDocAdvice({
+    ...input,
+    asset: normalizeAsset(String(input.asset)),
+    nearestCoastline: input.nearestCoastline || "nearest mapped coastline",
+  });
 }

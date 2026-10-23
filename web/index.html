@@ -108,15 +108,15 @@
     <div class="orb" aria-hidden="true"></div>
     <h1>Alexa+ · DOC Watch</h1>
     <div class="sub">Simulated Agent Skill · MCP-backed</div>
-    <div class="badge">SIMULATION: MOCK Ring sensors · live NWS</div>
+    <div class="badge">SIMULATION: Alexa+ sensors · live NWS</div>
     <div class="chat" id="chat"></div>
     <div class="chips">
-      <button type="button" data-q="Alexa, what's my dock weather in Rochester?">Dock weather</button>
+      <button type="button" data-q="Alexa, coastal advisories for Rochester?">Coastal advisories</button>
       <button type="button" data-q="Any freeze or flood risk in the next twelve hours?">12h risk</button>
-      <button type="button" data-q="Should I pull the boat?">Pull the boat?</button>
+      <button type="button" data-q="Should I pull the boat?">Maritime advice</button>
       <button type="button" data-q="Give me a sixty-second briefing.">60s briefing</button>
       <button type="button" data-q="What's the forecast for Buffalo tonight?">Buffalo forecast</button>
-      <button type="button" data-q="Show my home sensors.">Home sensors</button>
+      <button type="button" data-q="Show my Alexa+ sensors.">Alexa+ sensors</button>
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
     <form class="composer" id="form">
@@ -140,7 +140,7 @@
 
     let lastLocation = "rochester";
 
-    add("agent", "Hi. I'm DOC Watch on Alexa+. Ask about dock weather in Rochester, Buffalo, Fairport, or Sodus Point, freeze or flood risk, or how the mesh works. Sensors are MOCK-labeled tonight.");
+    add("agent", "Hi. I'm DOC Watch on Alexa+. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point, freeze or flood risk, or how the mesh works. Alexa+ sensors are on.");
 
     function pickLocation(s) {
       if (/\bbuffalo\b|\bbflo\b|\blake erie\b/.test(s)) return "buffalo";
@@ -151,11 +151,19 @@
       return lastLocation;
     }
 
+    function pickAsset(s) {
+      if (/\bmaritime\b|\bboat\b|\bdock\b|\bcraft\b/.test(s)) return "maritime";
+      if (/\bmobile\b|\bvan\b|\bvehicle\b|\bcar\b/.test(s)) return "mobile";
+      if (/\bcurrent location\b|\bhere\b|\bmy location\b/.test(s)) return "current_location";
+      if (/\bhome\b|\bhouse\b/.test(s)) return "home";
+      return "maritime";
+    }
+
     function route(q) {
       const s = q.toLowerCase();
       const location = pickLocation(s);
       lastLocation = location;
-      if (s.includes("sensor") || s.includes("ring") || s.includes("humidity") || s.includes("motion")) {
+      if (s.includes("sensor") || s.includes("alexa+") || s.includes("humidity") || s.includes("motion")) {
         return ["get_home_sensors", { location }];
       }
       if (s.includes("brief") || s.includes("sixty") || s.includes("60") || s.includes("spoken")) {
@@ -167,12 +175,12 @@
       if (s.includes("watch") && (s.includes("alert") || s.includes("threshold") || s.includes("set"))) {
         return ["set_watch", { location, windMph: 25, freezeTempF: 36, flood: true }];
       }
-      if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i")) {
-        return ["get_dock_advice", { location, asset: s.includes("van") ? "van" : s.includes("boat") ? "boat" : "dock" }];
+      if (s.includes("pull") || s.includes("cover") || s.includes("boat") || s.includes("van") || s.includes("advice") || s.includes("should i") || s.includes("coastal") || s.includes("maritime")) {
+        return ["get_DOC_advice", { location, asset: pickAsset(s) }];
       }
-      // Risk questions: dock advice already folds alerts + freeze/wind/flood rules.
+      // Risk questions: DOC advice folds alerts + freeze/wind/flood/coastal rules + nearest coastline.
       if (s.includes("risk") || s.includes("freeze") || s.includes("flood") || s.includes("twelve") || s.includes("12h") || /\b12\b/.test(s)) {
-        return ["get_dock_advice", { location, asset: "dock" }];
+        return ["get_DOC_advice", { location, asset: pickAsset(s) }];
       }
       if (s.includes("alert")) {
         return ["get_alerts", { location }];

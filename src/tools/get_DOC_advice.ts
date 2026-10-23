@@ -1,30 +1,31 @@
 import { z } from "zod";
-import { evaluateDockAdvice, type Asset } from "../services/advice.js";
+import { evaluateDocAdvice, normalizeAsset, type Asset } from "../services/advice.js";
 import { enhanceAdvice } from "../services/grok.js";
-import { resolveLocation } from "../services/locations.js";
+import { coastlineFor, resolveLocation } from "../services/locations.js";
 import { getAlerts, getCurrentConditions, getForecast } from "../services/nws.js";
 import { toolError, toolResult } from "./types.js";
 
-export const getDockAdviceSchema = {
+export const getDocAdviceSchema = {
   city: z.string().optional(),
   location: z.string().optional().describe("Location; defaults to Rochester / Long Pond"),
   lat: z.number().optional(),
   lon: z.number().optional(),
   asset: z
-    .enum(["dock", "boat", "van", "home"])
+    .enum(["home", "mobile", "current_location", "maritime", "dock", "boat", "van"])
     .optional()
-    .describe("Asset to protect: dock, boat, van, or home"),
+    .describe("Asset: home, mobile, current_location, or maritime"),
 };
 
-export async function runGetDockAdvice(args: {
+export async function runGetDocAdvice(args: {
   city?: string;
   location?: string;
   lat?: number;
   lon?: number;
-  asset?: Asset;
+  asset?: Asset | string;
 }) {
   const loc = resolveLocation(args);
-  const asset: Asset = args.asset ?? "dock";
+  const asset = normalizeAsset(args.asset ? String(args.asset) : "maritime");
+  const nearestCoastline = coastlineFor(loc);
 
   const [conditions, forecast, alertsResp] = await Promise.all([
     getCurrentConditions(loc.lat, loc.lon),
@@ -34,13 +35,14 @@ export async function runGetDockAdvice(args: {
 
   if (conditions.error && forecast.error && alertsResp.error) {
     return toolError(
-      `Cannot compute dock advice for ${loc.name}: NWS unreachable (${conditions.error})`,
-      { location: loc, conditions, forecast, alerts: alertsResp }
+      `Cannot compute DOC advice for ${loc.name}: NWS unreachable (${conditions.error})`,
+      { location: loc, nearestCoastline, conditions, forecast, alerts: alertsResp }
     );
   }
 
-  const advice = evaluateDockAdvice({
+  const advice = evaluateDocAdvice({
     locationName: loc.label,
+    nearestCoastline,
     asset,
     conditions,
     forecast,
@@ -54,10 +56,8 @@ export async function runGetDockAdvice(args: {
     template: advice.human,
   });
 
-  // Prefer Grok narrative when present; otherwise the conversational template.
-  // Always keep structured actions in JSON for clients.
   const human = enhanced.enhanced
-    ? /suggested next steps|actions?:/i.test(enhanced.text)
+    ? /suggested next steps|actions?:|coastal advisories/i.test(enhanced.text)
       ? enhanced.text
       : `${enhanced.text} Suggested next steps: ${advice.actions.join("; ")}.`
     : advice.human;
@@ -65,8 +65,9 @@ export async function runGetDockAdvice(args: {
   return toolResult({
     human,
     data: {
-      tool: "get_dock_advice",
+      tool: "get_DOC_advice",
       location: loc,
+      nearestCoastline,
       asset,
       advice: {
         risks: advice.risks,
@@ -86,3 +87,7 @@ export async function runGetDockAdvice(args: {
     },
   });
 }
+
+/** @deprecated alias */
+export const getDockAdviceSchema = getDocAdviceSchema;
+export const runGetDockAdvice = runGetDocAdvice;

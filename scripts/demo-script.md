@@ -10,7 +10,7 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 ### 0:00–0:15 — Problem
 
 **Say:**  
-“Docks and homes get wrecked by freeze, wind, and flood while generic weather apps stay generic. DOC Watch is voice-first dock and home intelligence for Alexa-plus.”
+“Coastal homes and maritime assets get wrecked by freeze, wind, and flood while generic weather apps stay generic. DOC Watch is voice-first coastal advisories for Alexa-plus.”
 
 **Show:** Repo README title / tagline on screen.
 
@@ -31,18 +31,18 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 **Do:** Location **Rochester / North Greece / Long Pond** → `get_current_conditions` → `get_alerts`.
 
 **Say:**  
-“What’s the dock weather in Rochester right now? Live National Weather Service — no API key. Any freeze, flood, or severe risk?”
+“What are the coastal conditions in Rochester right now? Live National Weather Service — no API key. Any freeze, flood, or coastal risk?”
 
 *(Quiet alerts or “no elevated flags” is real NWS — call the calm night out; still name the freeze / wind / flood rules.)*
 
 ---
 
-### 1:10–1:40 — Dock advice
+### 1:10–1:40 — DOC coastal advice
 
-**Do:** Asset = **boat** → `get_dock_advice`.
+**Do:** Asset = **Maritime** → `get_DOC_advice`.
 
 **Say:**  
-“Should I pull the boat, cover the dock, or move the van? DOC applies freeze at thirty-six degrees, wind at twenty-five miles per hour, and NWS flood alerts — then returns actions.”
+“Give me coastal advisories for my maritime asset. DOC reports the nearest coastline, then applies freeze at thirty-six degrees, wind at twenty-five miles per hour, and NWS flood or coastal alerts — then returns actions.”
 
 ---
 
@@ -58,12 +58,12 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 
 ---
 
-### 2:10–2:35 — Mock home sensors
+### 2:10–2:35 — Alexa+ sensors
 
-**Do:** Click `get_home_sensors`. Point at **MOCK MODE** / **MOCK_RING** badge.
+**Do:** Click `get_home_sensors`. Point at **Alexa+ sensors** label.
 
 **Say:**  
-“Mock Ring nodes: freeze sensor, humidity, flood probe, outdoor cam motion for visual context only — not a fake live camera weather network.”
+“Alexa-plus sensors: freeze sensor, humidity, flood probe, outdoor cam motion for visual context only — cameras are not weather instruments.”
 
 ---
 

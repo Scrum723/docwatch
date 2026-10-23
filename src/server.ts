@@ -17,7 +17,7 @@ import { registerAllTools, TOOL_NAMES } from "./tools/index.js";
 import { runGetAlerts } from "./tools/get_alerts.js";
 import { runGetCurrentConditions } from "./tools/get_current_conditions.js";
 import { runDescribeFeatures } from "./tools/describe_features.js";
-import { runGetDockAdvice } from "./tools/get_dock_advice.js";
+import { runGetDocAdvice } from "./tools/get_DOC_advice.js";
 import { runGetForecast } from "./tools/get_forecast.js";
 import { runGetHomeSensors } from "./tools/get_home_sensors.js";
 import { runGetSpokenBriefing } from "./tools/get_spoken_briefing.js";
@@ -65,6 +65,7 @@ app.get("/health", (_req, res) => {
       tools: TOOL_NAMES,
     },
     mockRing: (process.env.MOCK_RING ?? "true") !== "false",
+    alexaSensors: true,
   });
 });
 
@@ -88,8 +89,9 @@ app.post("/api/tools/:name", async (req: Request, res: Response) => {
       case "get_alerts":
         result = await runGetAlerts(args as any);
         break;
-      case "get_dock_advice":
-        result = await runGetDockAdvice(args as any);
+      case "get_DOC_advice":
+      case "get_dock_advice": // legacy alias
+        result = await runGetDocAdvice(args as any);
         break;
       case "get_spoken_briefing":
         result = await runGetSpokenBriefing(args as any);

@@ -8,6 +8,7 @@ export type LocationRecord = {
   label: string;
   lat: number;
   lon: number;
+  nearestCoastline?: string;
   aliases: string[];
 };
 
@@ -42,12 +43,14 @@ export function resolveLocation(input?: {
     Number.isFinite(input.lat) &&
     Number.isFinite(input.lon)
   ) {
+    const nearest = nearestCoastlineForCoords(input.lat, input.lon);
     return {
       key: "custom",
       name: `Custom (${input.lat.toFixed(3)}, ${input.lon.toFixed(3)})`,
       label: `Coordinates ${input.lat}, ${input.lon}`,
       lat: input.lat,
       lon: input.lon,
+      nearestCoastline: nearest,
       aliases: [],
     };
   }
@@ -82,4 +85,37 @@ export class UnknownLocationError extends Error {
 
 export function listLocations(): LocationRecord[] {
   return Object.values(load().locations);
+}
+
+/** Haversine miles between two WGS84 points. */
+function milesBetween(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 3958.8;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const lat1 = toRad(aLat);
+  const lat2 = toRad(bLat);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Pick the nearest known coastline label for arbitrary coordinates. */
+export function nearestCoastlineForCoords(lat: number, lon: number): string {
+  const locs = listLocations().filter((l) => l.nearestCoastline);
+  if (locs.length === 0) return "nearest mapped coastline";
+  let best = locs[0]!;
+  let bestMi = milesBetween(lat, lon, best.lat, best.lon);
+  for (const loc of locs.slice(1)) {
+    const mi = milesBetween(lat, lon, loc.lat, loc.lon);
+    if (mi < bestMi) {
+      best = loc;
+      bestMi = mi;
+    }
+  }
+  return best.nearestCoastline || "nearest mapped coastline";
+}
+
+export function coastlineFor(loc: LocationRecord): string {
+  return loc.nearestCoastline || nearestCoastlineForCoords(loc.lat, loc.lon);
 }

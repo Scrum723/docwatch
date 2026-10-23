@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getAlertsSchema, runGetAlerts } from "./get_alerts.js";
 import { getCurrentConditionsSchema, runGetCurrentConditions } from "./get_current_conditions.js";
 import { describeFeaturesSchema, runDescribeFeatures } from "./describe_features.js";
-import { getDockAdviceSchema, runGetDockAdvice } from "./get_dock_advice.js";
+import { getDocAdviceSchema, runGetDocAdvice } from "./get_DOC_advice.js";
 import { getForecastSchema, runGetForecast } from "./get_forecast.js";
 import { getHomeSensorsSchema, runGetHomeSensors } from "./get_home_sensors.js";
 import { getSpokenBriefingSchema, runGetSpokenBriefing } from "./get_spoken_briefing.js";
@@ -14,7 +14,7 @@ export function registerAllTools(server: McpServer): void {
     "get_current_conditions",
     {
       description:
-        "Current dock/home weather from National Weather Service (api.weather.gov). Defaults to Rochester / North Greece / Long Pond.",
+        "Current coastal/home weather from National Weather Service (api.weather.gov). Defaults to Rochester / North Greece / Long Pond.",
       inputSchema: getCurrentConditionsSchema,
     },
     async (args) => safe(() => runGetCurrentConditions(args))
@@ -32,20 +32,20 @@ export function registerAllTools(server: McpServer): void {
   server.registerTool(
     "get_alerts",
     {
-      description: "Active NWS alerts for a location. Defaults to Rochester area.",
+      description: "Active NWS alerts and coastal advisories for a location. Defaults to Rochester area.",
       inputSchema: getAlertsSchema,
     },
     async (args) => safe(() => runGetAlerts(args))
   );
 
   server.registerTool(
-    "get_dock_advice",
+    "get_DOC_advice",
     {
       description:
-        "Should I pull the boat, cover the dock, or move the van? Freeze/wind/flood rules plus optional Grok narrative.",
-      inputSchema: getDockAdviceSchema,
+        "Coastal advisories and protective actions for Home, Mobile, Current location, or Maritime assets. Always reports the nearest coastline. Freeze/wind/flood/coastal rules plus optional Grok narrative.",
+      inputSchema: getDocAdviceSchema,
     },
-    async (args) => safe(() => runGetDockAdvice(args))
+    async (args) => safe(() => runGetDocAdvice(args))
   );
 
   server.registerTool(
@@ -60,8 +60,7 @@ export function registerAllTools(server: McpServer): void {
   server.registerTool(
     "get_home_sensors",
     {
-      description:
-        "Ring-style home/dock sensors. Default MOCK_RING=true with clearly labeled mock temp/humidity/flood/freeze/motion.",
+      description: "Alexa+ sensors for home/coastal context (temperature, humidity, flood, freeze, motion).",
       inputSchema: getHomeSensorsSchema,
     },
     async (args) => safe(() => runGetHomeSensors(args))
@@ -81,7 +80,7 @@ export function registerAllTools(server: McpServer): void {
     "describe_features",
     {
       description:
-        "Explain DOC Watch: mesh vision, flood/freeze sensors, how to join as a node, Alexa+ MCP usage.",
+        "Explain DOC Watch: coastal advisories, Alexa+ sensors, how to join as a node, Alexa+ MCP usage.",
       inputSchema: describeFeaturesSchema,
     },
     async (args) => safe(() => runDescribeFeatures(args))
@@ -92,7 +91,7 @@ export const TOOL_NAMES = [
   "get_current_conditions",
   "get_forecast",
   "get_alerts",
-  "get_dock_advice",
+  "get_DOC_advice",
   "get_spoken_briefing",
   "get_home_sensors",
   "set_watch",

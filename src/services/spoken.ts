@@ -69,24 +69,27 @@ export function buildSpokenBriefingTemplate(args: SpokenBriefingArgs): string {
   );
 }
 
-/** Conversational dock/home advice line (template path). */
+/** Conversational coastal-advisory advice line (template path). */
 export function buildAdviceHuman(args: {
   locationName: string;
+  nearestCoastline: string;
   asset: string;
   riskLabels: string;
   hasElevated: boolean;
   actions: string[];
 }): string {
+  const assetLabel = String(args.asset).replace(/_/g, " ");
   const actionLine = args.actions.slice(0, 5).join("; ");
+  const coast = `Nearest coastline: ${args.nearestCoastline}.`;
   if (!args.hasElevated) {
     return sanitizeSpokenText(
-      `For your ${args.asset} at ${args.locationName}, things look quiet right now. ` +
-        `No elevated freeze, wind, or flood flags from the National Weather Service. ` +
+      `Coastal advisories for your ${assetLabel} at ${args.locationName}. ${coast} ` +
+        `Things look quiet right now. No elevated freeze, wind, flood, or coastal flags from the National Weather Service. ` +
         `Suggested next steps: ${actionLine}.`
     );
   }
   return sanitizeSpokenText(
-    `For your ${args.asset} at ${args.locationName}, DOC Watch sees ${args.riskLabels}. ` +
-      `Suggested next steps: ${actionLine}.`
+    `Coastal advisories for your ${assetLabel} at ${args.locationName}. ${coast} ` +
+      `DOC Watch sees ${args.riskLabels}. Suggested next steps: ${actionLine}.`
   );
 }

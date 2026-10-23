@@ -7,6 +7,7 @@
       "label": "Rochester / North Greece / Long Pond Road area",
       "lat": 43.255,
       "lon": -77.685,
+      "nearestCoastline": "Lake Ontario shoreline (North Greece / Charlotte / Braddock Bay)",
       "aliases": [
         "roc",
         "rochester ny",
@@ -18,9 +19,10 @@
     "fairport": {
       "key": "fairport",
       "name": "Fairport, NY",
-      "label": "Fairport Canal / Erie Canal docks",
+      "label": "Fairport Canal / Erie Canal",
       "lat": 43.0987,
       "lon": -77.4419,
+      "nearestCoastline": "Lake Ontario via Irondequoit Bay / Seabreeze corridor",
       "aliases": [
         "fairport ny",
         "fairport canal"
@@ -29,9 +31,10 @@
     "long_pond": {
       "key": "long_pond",
       "name": "Long Pond, Greece NY",
-      "label": "Long Pond shoreline docks",
+      "label": "Long Pond shoreline",
       "lat": 43.2585,
       "lon": -77.692,
+      "nearestCoastline": "Lake Ontario at Long Pond / North Greece",
       "aliases": [
         "long pond greece",
         "greece ny",
@@ -44,6 +47,7 @@
       "label": "Buffalo / Lake Erie waterfront",
       "lat": 42.886,
       "lon": -78.878,
+      "nearestCoastline": "Lake Erie shoreline (Buffalo harbor / Outer Harbor)",
       "aliases": [
         "buffalo ny",
         "bflo",
@@ -56,6 +60,7 @@
       "label": "Sodus Point / Lake Ontario",
       "lat": 43.271,
       "lon": -76.975,
+      "nearestCoastline": "Lake Ontario at Sodus Bay / Sodus Point",
       "aliases": [
         "sodus",
         "sodus bay"

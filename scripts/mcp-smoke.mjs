@@ -61,7 +61,7 @@ const required = [
   "get_current_conditions",
   "get_forecast",
   "get_alerts",
-  "get_dock_advice",
+  "get_DOC_advice",
   "get_spoken_briefing",
   "get_home_sensors",
   "set_watch",

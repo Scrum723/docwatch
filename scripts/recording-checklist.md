@@ -18,7 +18,7 @@
 - Conditions: Clear ~37°F, light wind (~8 mph) — quiet night is still a strong demo
 - Dock advice: may say **no elevated freeze/wind/flood flags** + stay weather-aware (rules still shown in your spoken line)
 - Alerts: often **none** (say “quiet on alerts” — that is valid NWS)
-- Sensors: **[MOCK MODE]** must stay on screen
+- Sensors: **Alexa+ sensors** label must stay on screen
 
 ---
 
@@ -29,9 +29,9 @@
 | 0:00 | README | Title | Problem + DOC Watch voice-first |
 | 0:15 | demo | **List tools** | MCP Streamable HTTP 2025-11-25 · eight tools |
 | 0:40 | demo | `get_current_conditions` → `get_alerts` | Live NWS, no API key |
-| 1:10 | demo | asset=boat → `get_dock_advice` | Freeze 36°F / wind 25 mph / flood rules |
+| 1:10 | demo | asset=Maritime → `get_DOC_advice` | Coastal advisories + nearest coastline |
 | 1:40 | demo | `get_spoken_briefing` | Sixty-second Alexa+ briefing (template if no Grok key) |
-| 2:10 | demo | `get_home_sensors` | Point at **MOCK** badge — labeled mock Ring |
+| 2:10 | demo | `get_home_sensors` | Point at **Alexa+ sensors** |
 | 2:35 | index | chip “Dock weather” | Same intelligence via Alexa+ sim |
 | 2:55 | LICENSE/README | Flash MIT + GitHub | Close: Alexa+ primary · MIT · thank you |
 
@@ -39,8 +39,8 @@
 
 ## Hard rules on camera
 
-1. **MOCK Ring** stays labeled — never imply a live worldwide Ring weather network.
-2. Cap **3:00**. Prefer cutting Alexa sim fluff over cutting MOCK or MCP tools list.
+1. Say **Alexa+ sensors** — do not say Ring on camera.
+2. Cap **3:00**. Prefer cutting Alexa sim fluff over cutting Alexa+ sensors or MCP tools list.
 3. If NWS is slow, keep talking; do not invent temperatures.
 4. Primary track wording: **Alexa+ only** (AWS Builder / Open Source layered).
 

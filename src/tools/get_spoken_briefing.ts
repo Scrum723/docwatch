@@ -1,8 +1,8 @@
 import { describeObsTime } from "./get_current_conditions.js";
 import { z } from "zod";
-import { evaluateDockAdvice } from "../services/advice.js";
+import { evaluateDocAdvice } from "../services/advice.js";
 import { enhanceBriefing } from "../services/grok.js";
-import { resolveLocation } from "../services/locations.js";
+import { coastlineFor, resolveLocation } from "../services/locations.js";
 import { getAlerts, getCurrentConditions, getForecast } from "../services/nws.js";
 import { buildSpokenBriefingTemplate } from "../services/spoken.js";
 import { toolError, toolResult } from "./types.js";
@@ -38,9 +38,10 @@ export async function runGetSpokenBriefing(args: {
     );
   }
 
-  const advice = evaluateDockAdvice({
+  const advice = evaluateDocAdvice({
     locationName: loc.label,
-    asset: "dock",
+    nearestCoastline: coastlineFor(loc),
+    asset: "maritime",
     conditions,
     forecast,
     alerts: alertsResp.alerts,

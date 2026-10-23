@@ -60,14 +60,17 @@ describe("buildSpokenBriefingTemplate (shipped template path)", () => {
 });
 
 describe("buildAdviceHuman (shipped advice voice)", () => {
-  it("speaks quietly when no elevated flags", () => {
+  it("speaks quietly when no elevated flags and cites coastline", () => {
     const text = buildAdviceHuman({
-      locationName: "Fairport Canal / Erie Canal docks",
-      asset: "boat",
-      riskLabels: "no elevated freeze/wind/flood flags",
+      locationName: "Fairport Canal / Erie Canal",
+      nearestCoastline: "Lake Ontario via Irondequoit Bay / Seabreeze corridor",
+      asset: "maritime",
+      riskLabels: "no elevated freeze/wind/flood/coastal flags",
       hasElevated: false,
-      actions: ["stay weather-aware", "secure loose gear"],
+      actions: ["stay weather-aware", "check coastal advisories"],
     });
+    expect(text).toMatch(/coastal advisories/i);
+    expect(text).toMatch(/Nearest coastline/i);
     expect(text).toMatch(/look quiet/i);
     expect(text).toMatch(/Suggested next steps/i);
   });

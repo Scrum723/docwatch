@@ -5,7 +5,7 @@ import { toolResult } from "./types.js";
 
 export const getHomeSensorsSchema = {
   city: z.string().optional(),
-  location: z.string().optional().describe("Location for associated home/dock sensors"),
+  location: z.string().optional().describe("Location for associated Alexa+ sensors"),
   lat: z.number().optional(),
   lon: z.number().optional(),
 };
