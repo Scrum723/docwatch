@@ -150,9 +150,14 @@
       <button type="button" data-q="How does the flood sensor mesh work?">Features</button>
     </div>
     <div class="voice-row">
-      <button type="button" id="voiceBtn" aria-pressed="false" title="Hold conversation by voice">🎙 Voice to voice</button>
+      <button type="button" id="voiceBtn" aria-pressed="false" title="Speak your question">🎙 Voice to voice</button>
+      <button type="button" id="speakLastBtn" title="Speak the last DOC reply" style="background:#1c2433;color:var(--text)">🔊 Speak reply</button>
     </div>
-    <div class="voice-hint" id="voiceHint">Tap Voice to voice: speak, then DOC replies out loud.</div>
+    <label class="voice-hint" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;cursor:pointer">
+      <input type="checkbox" id="speakToggle" checked />
+      Always speak DOC replies (works even if mic STT fails)
+    </label>
+    <div class="voice-hint" id="voiceHint">Tap Voice to voice: speak, then DOC replies out loud. Needs internet for browser speech-to-text.</div>
     <form class="composer" id="form">
       <input id="input" placeholder="Ask DOC Watch…" autocomplete="off" />
       <button type="submit">Ask</button>
@@ -164,6 +169,8 @@
     const form = document.getElementById("form");
     const input = document.getElementById("input");
     const voiceBtn = document.getElementById("voiceBtn");
+    const speakLastBtn = document.getElementById("speakLastBtn");
+    const speakToggle = document.getElementById("speakToggle");
     const voiceHint = document.getElementById("voiceHint");
     const orb = document.getElementById("orb");
 
@@ -177,8 +184,17 @@
 
     let lastLocation = "rochester";
     let voiceBusy = false;
+    let lastAgentReply = "";
+    let sttNetworkRetries = 0;
 
-    add("agent", "Hi. I'm DOC Watch on Alexa+. Tap Voice to voice to speak with me, or ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
+    // Chrome often needs voices warmed before first speak.
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+
+    add("agent", "Hi. I'm DOC Watch on Alexa+. Tap Voice to voice to speak, or type/chips with Always speak replies on. Ask about coastal advisories in Rochester, Buffalo, Fairport, or Sodus Point. Alexa+ sensors are on.");
+    lastAgentReply = chat.querySelector(".agent") ? chat.querySelector(".agent").textContent : "";
 
     function pickLocation(s) {
       if (/\bbuffalo\b|\bbflo\b|\blake erie\b/.test(s)) return "buffalo";
@@ -235,17 +251,33 @@
           return;
         }
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(String(text || "").slice(0, 1200));
+        const clean = String(text || "")
+          .replace(/https?:\/\/\S+/gi, "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 1200);
+        const u = new SpeechSynthesisUtterance(clean);
         u.lang = "en-US";
         u.rate = 1.02;
+        const voices = window.speechSynthesis.getVoices();
+        const en = voices.find((v) => /^en(-|_)/i.test(v.lang) && /Google|Microsoft|Natural/i.test(v.name))
+          || voices.find((v) => /^en(-|_)/i.test(v.lang));
+        if (en) u.voice = en;
         u.onend = () => resolve();
         u.onerror = () => resolve();
-        window.speechSynthesis.speak(u);
+        // Brief delay helps Chrome actually start audio after mic use.
+        setTimeout(() => window.speechSynthesis.speak(u), 60);
       });
     }
 
+    function shouldSpeak(opts) {
+      if (opts && opts.speak === true) return true;
+      if (opts && opts.speak === false) return false;
+      return !!(speakToggle && speakToggle.checked);
+    }
+
     async function ask(q, opts) {
-      const speakReply = !!(opts && opts.speak);
+      const speakReply = shouldSpeak(opts);
       add("user", q);
       const [tool, body] = route(q);
       add("agent", "One moment while I check National Weather Service…");
@@ -259,12 +291,14 @@
         const human = (data.structuredContent && data.structuredContent.human) || data.human || JSON.stringify(data);
         chat.removeChild(chat.lastChild);
         add("agent", human);
+        lastAgentReply = human;
         if (speakReply) await speak(human);
         return human;
       } catch (e) {
         const err = "Something went wrong: " + (e.message || e);
         chat.removeChild(chat.lastChild);
         add("agent", err);
+        lastAgentReply = err;
         if (speakReply) await speak(err);
         return err;
       }
@@ -278,41 +312,121 @@
       orb.classList.toggle("listening", on);
       voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
       voiceBtn.textContent = on ? "● Listening… tap to stop" : "🎙 Voice to voice";
-      voiceHint.textContent = on
-        ? "Listening. Speak your question clearly."
-        : "Tap Voice to voice: speak, then DOC replies out loud.";
+      if (on) {
+        voiceHint.textContent = "Listening. Speak your question clearly.";
+      }
     }
 
     function stopListening() {
-      try { if (recognition) recognition.stop(); } catch (_) {}
+      try { if (recognition) recognition.abort(); } catch (_) {}
       setListening(false);
+    }
+
+    function sttErrorMessage(code) {
+      if (code === "not-allowed") {
+        return "Microphone blocked. Click the lock icon in the address bar → allow Microphone for 127.0.0.1, then reload.";
+      }
+      if (code === "network") {
+        return "Browser speech-to-text needs internet (cloud STT). Check Wi‑Fi, then retry Voice to voice — or type/chips with Always speak replies ON (Speak reply still works offline).";
+      }
+      if (code === "no-speech") {
+        return "No speech heard. Tap Voice to voice and speak closer to the mic.";
+      }
+      if (code === "audio-capture") {
+        return "No microphone found. Plug in a mic or check Windows sound settings.";
+      }
+      if (code === "aborted") {
+        return "Listening stopped.";
+      }
+      return "Voice error: " + (code || "unknown") + ". Try Chrome/Edge, or type below with Always speak replies ON.";
+    }
+
+    function startListening() {
+      if (!recognition || voiceBusy) return;
+      if (!navigator.onLine) {
+        voiceHint.textContent = sttErrorMessage("network");
+        speakToggle.checked = true;
+        input.focus();
+        return;
+      }
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      try {
+        recognition.start();
+      } catch (_) {
+        try {
+          recognition.abort();
+          setTimeout(() => {
+            try { recognition.start(); } catch (e2) {
+              voiceHint.textContent = "Could not start mic. Reload the page and try again.";
+            }
+          }, 200);
+        } catch (e3) {
+          voiceHint.textContent = "Could not start mic. Reload the page and try again.";
+        }
+      }
     }
 
     if (!SpeechRecognition) {
       voiceBtn.disabled = true;
-      voiceHint.textContent = "Voice to voice needs Chrome or Edge on this machine.";
+      voiceHint.textContent = "Mic STT needs Chrome or Edge. Use chips/type with Always speak replies ON.";
     } else {
       recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.continuous = false;
 
-      recognition.onstart = () => setListening(true);
+      recognition.onstart = () => {
+        sttNetworkRetries = 0;
+        setListening(true);
+      };
       recognition.onend = () => {
         if (!voiceBusy) setListening(false);
       };
       recognition.onerror = (ev) => {
+        const code = ev.error || "unknown";
+        // Ignore benign aborted errors from stop/abort.
+        if (code === "aborted") {
+          setListening(false);
+          return;
+        }
+        // One automatic retry for flaky cloud STT network blips.
+        if (code === "network" && sttNetworkRetries < 1 && navigator.onLine) {
+          sttNetworkRetries += 1;
+          voiceHint.textContent = "Speech service blip — retrying once…";
+          setListening(false);
+          setTimeout(() => startListening(), 450);
+          return;
+        }
         setListening(false);
         voiceBusy = false;
-        const msg = ev.error === "not-allowed"
-          ? "Microphone permission blocked. Allow mic for localhost, then try again."
-          : "Voice error: " + (ev.error || "unknown") + ". Try again.";
+        voiceBtn.disabled = false;
+        const msg = sttErrorMessage(code);
         voiceHint.textContent = msg;
-        add("agent", msg);
+        if (code === "network" || code === "not-allowed") {
+          speakToggle.checked = true;
+          input.focus();
+        }
+        // Do not flood the chat transcript with repeated STT errors.
       };
+
+      let finalTranscript = "";
       recognition.onresult = async (ev) => {
-        const transcript = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const piece = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) finalTranscript += piece;
+          else interim += piece;
+        }
+        const live = (finalTranscript || interim).trim();
+        if (live) {
+          input.value = live;
+          voiceHint.textContent = interim ? ("Hearing: " + interim) : ("Got: " + finalTranscript);
+        }
+        if (!ev.results[ev.results.length - 1].isFinal) return;
+
+        const transcript = finalTranscript.trim();
+        finalTranscript = "";
         setListening(false);
         if (!transcript) {
           voiceHint.textContent = "Did not catch that. Tap Voice to voice and try again.";
@@ -336,17 +450,23 @@
         if (voiceBusy) return;
         if (voiceBtn.classList.contains("listening")) {
           stopListening();
+          voiceHint.textContent = "Listening stopped. Type below or tap Voice to voice again.";
           return;
         }
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-        try {
-          recognition.start();
-        } catch (_) {
-          // Already started
-          stopListening();
-        }
+        finalTranscript = "";
+        startListening();
       });
     }
+
+    speakLastBtn.addEventListener("click", async () => {
+      if (!lastAgentReply) {
+        voiceHint.textContent = "No reply to speak yet. Ask a question first.";
+        return;
+      }
+      voiceHint.textContent = "Speaking last DOC reply…";
+      await speak(lastAgentReply);
+      voiceHint.textContent = "Done.";
+    });
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
