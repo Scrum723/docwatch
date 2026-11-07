@@ -247,6 +247,8 @@
       "Hi — Alexa+ chat with DOC Watch. Voice out uses Amazon Polly when AWS is signed in. Tap Talk (Transcribe mic) or Demo v2v for the video."
     );
 
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
     fetch("/health")
       .then((r) => r.json())
       .then((h) => {
@@ -260,7 +262,9 @@
             (awsVoice.pollyEngine || "neural") +
             ") · Transcribe mic " +
             (awsVoice.transcribe ? "on" : "off");
-          voiceHint.textContent = "AWS Polly/Transcribe ready. Tap Talk to Alexa+ chat for v2v.";
+          voiceHint.textContent = awsVoice.transcribe
+            ? "AWS Polly + Transcribe ready. Tap Talk for live mic → Alexa+ chat."
+            : "Polly ready. Tap Talk (browser mic) or ▶ Demo v2v for a reliable recording path.";
         } else {
           badge.textContent =
             "AWS voice offline — run aws login, then refresh. Demo v2v still works for recording.";
@@ -274,7 +278,13 @@
 
     async function speakAlexaReply(text) {
       if (!speakToggle.checked) return;
-      const clean = String(text || "")
+      // Voice says "Dock Watch"; on-screen chat keeps "DOC Watch".
+      const phoneticForTts = (t) =>
+        String(t || "")
+          .replace(/\bDOC[_\s-]*Watch\b/gi, "Dock Watch")
+          .replace(/\bDOCWatch\b/gi, "Dock Watch")
+          .replace(/\bDOCK_Watch\b/gi, "Dock Watch");
+      const clean = phoneticForTts(text)
         .replace(/https?:\/\/\S+/gi, "")
         .replace(/\s+/g, " ")
         .trim()
@@ -405,6 +415,8 @@
     function abortListening() {
       try { if (listenTimer) clearTimeout(listenTimer); } catch (_) {}
       listenTimer = null;
+      try { if (activeRec) activeRec.abort(); } catch (_) {}
+      activeRec = null;
       try { if (processor) processor.disconnect(); } catch (_) {}
       processor = null;
       try { if (audioCtx) audioCtx.close(); } catch (_) {}
@@ -426,6 +438,75 @@
       return out;
     }
 
+    function startBrowserListen(opts) {
+      const continueConv = !!(opts && opts.continueConv);
+      if (!SpeechRecognitionCtor) {
+        voiceHint.textContent =
+          "Browser mic STT unavailable here. Use ▶ Demo v2v (Polly speaks replies) or type.";
+        return;
+      }
+      if (!navigator.onLine) {
+        voiceHint.textContent = "Offline — browser mic needs network. Use ▶ Demo v2v or type.";
+        return;
+      }
+
+      const rec = new SpeechRecognitionCtor();
+      activeRec = rec;
+      rec.lang = "en-US";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.continuous = false;
+
+      rec.onstart = () => {
+        setListening(true);
+        voiceHint.textContent = "Listening (browser mic)… speak, then pause.";
+      };
+      rec.onerror = (ev) => {
+        activeRec = null;
+        setListening(false);
+        const err = (ev && ev.error) || "error";
+        if (err === "aborted" || err === "no-speech") {
+          voiceHint.textContent = "No speech caught. Tap Talk again, or use ▶ Demo v2v.";
+          return;
+        }
+        if (err === "network") {
+          voiceHint.textContent =
+            "Browser mic network error (Google STT). Use ▶ Demo v2v — Polly still speaks replies.";
+          return;
+        }
+        if (err === "not-allowed") {
+          voiceHint.textContent = "Microphone blocked. Allow mic for 127.0.0.1, then try again.";
+          return;
+        }
+        voiceHint.textContent = "Mic error: " + err + " · Use ▶ Demo v2v or type.";
+      };
+      rec.onend = () => {
+        activeRec = null;
+        setListening(false);
+      };
+      rec.onresult = async (ev) => {
+        activeRec = null;
+        setListening(false);
+        const q = (ev.results && ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript) || "";
+        const text = String(q).trim();
+        if (!text) {
+          voiceHint.textContent = "No speech caught. Tap Talk again, or use ▶ Demo v2v.";
+          return;
+        }
+        input.value = text;
+        voiceHint.textContent = "Heard you — sending to Alexa+ chat…";
+        await sendToAlexaPlus(text, { fromVoice: true, continueConv });
+      };
+
+      try {
+        rec.start();
+      } catch (_) {
+        activeRec = null;
+        setListening(false);
+        voiceHint.textContent = "Could not start mic. Use ▶ Demo v2v or type.";
+      }
+    }
+
     async function startListening(opts) {
       const continueConv = !!(opts && opts.continueConv);
       if (busy && !continueConv) return;
@@ -433,6 +514,10 @@
       // Toggle off
       if (listening) {
         stopConversation = true;
+        if (activeRec) {
+          try { activeRec.abort(); } catch (_) {}
+          activeRec = null;
+        }
         await finishAwsListen({ cancelled: true });
         voiceHint.textContent = "Stopped. Tap Talk or Demo v2v.";
         return;
@@ -444,18 +529,18 @@
       }
       if (window.speechSynthesis) window.speechSynthesis.cancel();
 
-      // Prefer Amazon Transcribe (avoids Chrome Google STT network errors).
+      // Refresh health once if AWS looked offline.
       if (!awsVoice.transcribe && !awsVoice.polly) {
-        // Refresh health once in case user just finished aws login.
         try {
           const h = await fetch("/health").then((r) => r.json());
           awsVoice = h.awsVoice || awsVoice;
         } catch (_) {}
       }
 
+      // Default reliable path: browser STT → Alexa+ chat → Polly TTS.
+      // Amazon Transcribe only when DOCWATCH_TRANSCRIBE=true (Console subscription).
       if (!awsVoice.transcribe) {
-        voiceHint.textContent =
-          "AWS Transcribe not ready. Complete aws login + refresh, or use ▶ Demo v2v (Polly speaks when AWS is up).";
+        startBrowserListen(opts);
         return;
       }
 
@@ -532,17 +617,32 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pcm16Base64, sampleRate: 16000 }),
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
+        const raw = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
           voiceHint.textContent =
-            "Transcribe: " + (data.error || res.statusText) + " · Try Demo v2v or type.";
+            "STT returned non-JSON (server body limit?). Falling back to browser mic…";
+          voiceBtn.disabled = false;
+          startBrowserListen({});
+          return;
+        }
+        if (!res.ok || !data.ok) {
+          const hint = data.hint || data.error || res.statusText;
+          voiceHint.textContent =
+            "Transcribe unavailable (" + hint + "). Falling back to browser mic…";
+          voiceBtn.disabled = false;
+          // Remember Transcribe is off for this session.
+          awsVoice.transcribe = false;
+          startBrowserListen({});
           return;
         }
         input.value = data.transcript;
         voiceHint.textContent = "Heard you — sending to Alexa+ chat…";
         await sendToAlexaPlus(data.transcript, { fromVoice: true });
       } catch (e) {
-        voiceHint.textContent = "STT failed: " + (e.message || e) + " · Use Demo v2v.";
+        voiceHint.textContent = "STT failed: " + (e.message || e) + " · Use ▶ Demo v2v.";
       } finally {
         voiceBtn.disabled = false;
       }

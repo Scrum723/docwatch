@@ -21,6 +21,7 @@ import {
   type LanguageCode,
 } from "@aws-sdk/client-transcribe-streaming";
 import { Readable } from "node:stream";
+import { phoneticForTts } from "./spoken.js";
 
 const REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1";
 
@@ -98,7 +99,7 @@ export async function pickPollyVoice(): Promise<{ voiceId: VoiceId; engine: Engi
 }
 
 export async function synthesizePollySpeech(text: string): Promise<TtsResult> {
-  const clean = String(text || "")
+  const clean = phoneticForTts(String(text || ""))
     .replace(/https?:\/\/\S+/gi, "")
     .replace(/\s+/g, " ")
     .trim()
@@ -203,6 +204,7 @@ export async function awsVoiceHealth(): Promise<{
   pollyVoice?: string;
   pollyEngine?: string;
   transcribe: boolean;
+  /** Present when Polly/Transcribe credentials fail, or when Transcribe is intentionally off. */
   error?: string;
 }> {
   try {
@@ -211,13 +213,22 @@ export async function awsVoiceHealth(): Promise<{
     await pollyClient().send(
       new DescribeVoicesCommand({ LanguageCode: "en-US", Engine: "neural" })
     );
+    // Transcribe Streaming often needs a one-time Console subscription even when
+    // Polly works with the same creds. Opt in with DOCWATCH_TRANSCRIBE=true after
+    // enabling the service; otherwise the UI uses browser STT / Demo v2v.
+    const transcribeOptIn = (process.env.DOCWATCH_TRANSCRIBE ?? "").toLowerCase() === "true";
     return {
       region: REGION,
       polly: true,
       pollyVoice: pick.voiceId,
       pollyEngine: pick.engine,
-      // Transcribe proven on first real mic call; assume reachable if Polly works with same creds.
-      transcribe: true,
+      transcribe: transcribeOptIn,
+      ...(transcribeOptIn
+        ? {}
+        : {
+            error:
+              "Polly ready. Transcribe mic off until DOCWATCH_TRANSCRIBE=true (enable Transcribe in AWS Console first). Use Demo v2v or browser STT.",
+          }),
     };
   } catch (err) {
     return {

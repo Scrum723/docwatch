@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,14 +17,35 @@ type LocationsFile = {
   locations: Record<string, LocationRecord>;
 };
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_PATH = join(__dirname, "../../data/locations.json");
+function resolveDataPath(): string {
+  const envPath = (process.env.DOCWATCH_DATA || "").trim();
+  if (envPath && existsSync(envPath)) return envPath;
+
+  const candidates: string[] = [
+    join(process.cwd(), "data", "locations.json"),
+    join("/var/task", "data", "locations.json"),
+  ];
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    candidates.push(join(here, "../../data/locations.json"));
+    candidates.push(join(here, "../data/locations.json"));
+  } catch {
+    // CJS Lambda bundle has no import.meta.url
+  }
+  const hit = candidates.find((p) => existsSync(p));
+  if (!hit) {
+    throw new Error(
+      `locations.json not found. Tried: ${candidates.join("; ")}. Set DOCWATCH_DATA.`
+    );
+  }
+  return hit;
+}
 
 let cached: LocationsFile | null = null;
 
 function load(): LocationsFile {
   if (!cached) {
-    cached = JSON.parse(readFileSync(DATA_PATH, "utf8")) as LocationsFile;
+    cached = JSON.parse(readFileSync(resolveDataPath(), "utf8")) as LocationsFile;
   }
   return cached;
 }

@@ -7,12 +7,12 @@
 import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
-import express, { type Request, type Response } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { registerAllTools, TOOL_NAMES } from "./tools/index.js";
 import { runGetAlerts } from "./tools/get_alerts.js";
 import { runGetCurrentConditions } from "./tools/get_current_conditions.js";
@@ -49,9 +49,16 @@ function createDocWatchServer(): McpServer {
 // Stateful Streamable HTTP (JSON response mode) — protocol 2025-11-25
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 
-const app = createMcpExpressApp({ host: HOST });
+// Plain Express (not createMcpExpressApp) so we can raise the JSON body limit.
+// MCP SDK's helper hard-codes express.json() at ~100kb, which turns 5s PCM
+// uploads into HTML PayloadTooLargeError pages and breaks browser STT fetch.
+const app = express();
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "16mb" }));
+app.use(express.raw({ type: ["application/octet-stream", "audio/*"], limit: "16mb" }));
+if (HOST === "127.0.0.1" || HOST === "localhost" || HOST === "::1") {
+  app.use(hostHeaderValidation(["127.0.0.1", "localhost", "::1"]));
+}
 
 // Static web playground + Alexa+ sim
 app.use(express.static(join(__dirname, "../web")));
@@ -131,21 +138,38 @@ app.post("/api/stt", async (req: Request, res: Response) => {
   try {
     const b64 = String(req.body?.pcm16Base64 ?? "").trim();
     if (!b64) {
-      res.status(400).json({ ok: false, error: "pcm16Base64 required", provider: "amazon-transcribe" });
+      res.status(400).json({
+        ok: false,
+        error: "pcm16Base64 required",
+        provider: "amazon-transcribe",
+        fallback: "browser-stt",
+      });
       return;
     }
     const sampleRate = Number(req.body?.sampleRate) || 16000;
     const pcm = Buffer.from(b64, "base64");
     const result = await transcribePcm16(pcm, sampleRate);
     if (!result.ok) {
-      res.status(422).json(result);
+      const needsSub = /subscription/i.test(result.error);
+      res.status(needsSub ? 503 : 422).json({
+        ...result,
+        fallback: "browser-stt",
+        hint: needsSub
+          ? "Enable Amazon Transcribe once in AWS Console (us-east-1), or use browser STT / Demo v2v. Polly TTS still works."
+          : undefined,
+      });
       return;
     }
     res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[api/stt]", message);
-    res.status(500).json({ ok: false, error: message, provider: "amazon-transcribe" });
+    res.status(500).json({
+      ok: false,
+      error: message,
+      provider: "amazon-transcribe",
+      fallback: "browser-stt",
+    });
   }
 });
 
@@ -261,6 +285,20 @@ app.delete("/mcp", async (req: Request, res: Response) => {
     console.error("[MCP] DELETE error:", error);
     if (!res.headersSent) res.status(500).send("Error processing session termination");
   }
+});
+
+// Always JSON for API errors (never HTML DOCTYPE pages from PayloadTooLarge / body-parser).
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (!err) return next();
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || String(err);
+  if (res.headersSent) return next(err);
+  res.status(status).json({
+    ok: false,
+    error: message,
+    code: err.type || err.name || "error",
+    fallback: "browser-stt",
+  });
 });
 
 app.listen(PORT, HOST, () => {

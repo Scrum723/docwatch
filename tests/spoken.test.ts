@@ -2,8 +2,24 @@ import { describe, expect, it } from "vitest";
 import {
   buildAdviceHuman,
   buildSpokenBriefingTemplate,
+  phoneticForTts,
   sanitizeSpokenText,
 } from "../src/services/spoken.js";
+
+describe("phoneticForTts (Alexa+/Polly Dock Watch)", () => {
+  it("pronounces DOC Watch / DOCWatch as Dock Watch for voice only", () => {
+    expect(phoneticForTts("Here's what DOC Watch has for you.")).toBe(
+      "Here's what Dock Watch has for you."
+    );
+    expect(phoneticForTts("DOCWatch coastal advisories")).toBe("Dock Watch coastal advisories");
+    expect(phoneticForTts("DOCK_Watch briefing")).toBe("Dock Watch briefing");
+    expect(phoneticForTts("DOC-Watch and DOC_Watch")).toBe("Dock Watch and Dock Watch");
+  });
+
+  it("leaves on-screen-style branding unchanged when already Dock Watch", () => {
+    expect(phoneticForTts("Dock Watch is ready.")).toBe("Dock Watch is ready.");
+  });
+});
 
 describe("sanitizeSpokenText (shipped spoken polish)", () => {
   it("strips markdown, URLs, and typographic dashes", () => {

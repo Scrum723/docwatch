@@ -31,6 +31,20 @@ export function sanitizeSpokenText(text: string): string {
   return s;
 }
 
+/**
+ * Phonetic for Alexa+/Polly/browser TTS only.
+ * On-screen copy stays "DOC Watch"; voice says "Dock Watch" (boat dock).
+ * Alias form requested: DOCK_Watch → spoken as Dock Watch.
+ */
+export function phoneticForTts(text: string): string {
+  let s = String(text || "");
+  // Compound / spaced / underscored brand first
+  s = s.replace(/\bDOC[_\s-]*Watch\b/gi, "Dock Watch");
+  s = s.replace(/\bDOCWatch\b/gi, "Dock Watch");
+  s = s.replace(/\bDOCK_Watch\b/gi, "Dock Watch");
+  return s;
+}
+
 /** Natural ~60s briefing when Grok is unset. */
 export function buildSpokenBriefingTemplate(args: SpokenBriefingArgs): string {
   const obsBit =

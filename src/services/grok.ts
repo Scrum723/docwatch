@@ -4,19 +4,28 @@
  * Amazon Alexa+ judges: this is the live xAI chat call site when a key is present.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sanitizeSpokenText } from "./spoken.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function hasGrokKey(): boolean {
   return Boolean(process.env.XAI_API_KEY?.trim());
 }
 
 function loadPrompt(name: "briefing" | "advice"): string {
-  const path = join(__dirname, `../prompts/${name}.md`);
+  const candidates: string[] = [
+    join(process.cwd(), "src", "prompts", `${name}.md`),
+    join("/var/task", "src", "prompts", `${name}.md`),
+  ];
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    candidates.unshift(join(here, `../prompts/${name}.md`));
+  } catch {
+    // CJS Lambda bundle
+  }
+  const path = candidates.find((p) => existsSync(p));
+  if (!path) return "";
   return readFileSync(path, "utf8");
 }
 
