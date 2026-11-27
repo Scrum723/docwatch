@@ -52,7 +52,7 @@ npm run smoke          # initialize + tools/list against the running server
 npm run check          # typecheck + tests
 ```
 
-Supported named locations: Rochester, Fairport, Long Pond (Greece), Buffalo, Sodus Point (playground dropdown + Alexa+ sim chips cover these). Any other place can be queried with `lat` and `lon`; unknown names return a clear tool error rather than another city's weather. Every reading cites the NWS station and observation time, and flags observations older than 90 minutes as possibly stale.
+Supported named locations: Rochester, Fairport, Greece, Buffalo, Sodus Point (playground dropdown + Alexa+ sim chips cover these). Any other place can be queried with `lat` and `lon`; unknown names return a clear tool error rather than another city's weather. Every reading cites the NWS station and observation time, and flags observations older than 90 minutes as possibly stale.
 
 Spoken briefings and `get_DOC_advice` coastal advisories use calm plain English templates by default and always cite the nearest coastline. Set `XAI_API_KEY` to enhance narration with Grok; output is sanitized (no markdown, URLs, or typographic dashes) for Alexa+ playback.
 
@@ -75,7 +75,7 @@ Each tool returns **structured JSON** and a **short human string**.
 
 NWS (free) → Alexa+ sensor context → optional Grok risk copy → MCP tools → spoken briefing + structured JSON alert.
 
-**Defaults:** Rochester / North Greece / Long Pond Road area (`data/locations.json`).
+**Defaults:** Rochester, NY at city level (`data/locations.json`). Pins in git stay at city/town level (2 decimals, no home/dock labels). For exact local spots, point `DOCWATCH_DATA` at a private copy of `locations.json` kept outside git.
 
 ## Prior work disclosure
 

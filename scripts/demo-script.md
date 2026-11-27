@@ -28,7 +28,7 @@ Server should already be on `:8787`. If not: `cd C:\Users\cclot\docwatch` → `n
 
 ### 0:40–1:10 — Current conditions + alerts (Rochester)
 
-**Do:** Location **Rochester / North Greece / Long Pond** → `get_current_conditions` → `get_alerts`.
+**Do:** Location **Rochester, NY** → `get_current_conditions` → `get_alerts`.
 
 **Say:**  
 “What are the coastal conditions in Rochester right now? Live National Weather Service — no API key. Any freeze, flood, or coastal risk?”

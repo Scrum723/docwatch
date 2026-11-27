@@ -7,7 +7,7 @@ export const getCurrentConditionsSchema = {
   city: z
     .string()
     .optional()
-    .describe("City name; defaults to Rochester / North Greece / Long Pond"),
+    .describe("City name; defaults to Rochester, NY"),
   location: z.string().optional().describe("Location key or alias"),
   lat: z.number().optional().describe("Latitude"),
   lon: z.number().optional().describe("Longitude"),

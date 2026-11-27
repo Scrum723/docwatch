@@ -14,7 +14,7 @@ export function registerAllTools(server: McpServer): void {
     "get_current_conditions",
     {
       description:
-        "Current coastal/home weather from National Weather Service (api.weather.gov). Defaults to Rochester / North Greece / Long Pond.",
+        "Current coastal/home weather from National Weather Service (api.weather.gov). Defaults to Rochester, NY.",
       inputSchema: getCurrentConditionsSchema,
     },
     async (args) => safe(() => runGetCurrentConditions(args))

@@ -50,7 +50,7 @@ function load(): LocationsFile {
   return cached;
 }
 
-/** Resolve city name / key / lat-lon. Defaults to Rochester / North Greece / Long Pond. */
+/** Resolve city name / key / lat-lon. Defaults to Rochester, NY. */
 export function resolveLocation(input?: {
   city?: string;
   location?: string;

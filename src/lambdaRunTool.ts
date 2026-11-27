@@ -14,7 +14,7 @@ import { TOOL_NAMES } from "./tools/index.js";
 export { TOOL_NAMES };
 
 const locationProps = {
-  city: { type: "string", description: "City name; defaults to Rochester / North Greece / Long Pond" },
+  city: { type: "string", description: "City name; defaults to Rochester, NY" },
   location: { type: "string", description: "Location key or alias" },
   lat: { type: "number", description: "Latitude" },
   lon: { type: "number", description: "Longitude" },
@@ -24,7 +24,7 @@ export const TOOL_CATALOG = [
   {
     name: "get_current_conditions",
     description:
-      "Current coastal/home weather from National Weather Service (api.weather.gov). Defaults to Rochester / North Greece / Long Pond.",
+      "Current coastal/home weather from National Weather Service (api.weather.gov). Defaults to Rochester, NY.",
     inputSchema: { type: "object", properties: locationProps },
   },
   {

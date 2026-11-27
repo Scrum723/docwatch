@@ -23,11 +23,11 @@ describe("tool response shape + defaults", () => {
     );
   });
 
-  it("defaults location to Rochester / Long Pond area with nearest coastline", () => {
+  it("defaults location to Rochester (city level) with nearest coastline", () => {
     const loc = resolveLocation({});
-    expect(loc.lat).toBeCloseTo(43.255, 2);
-    expect(loc.lon).toBeCloseTo(-77.685, 2);
-    expect(loc.label.toLowerCase()).toMatch(/rochester|long pond|greece/);
+    expect(loc.lat).toBeCloseTo(43.16, 2);
+    expect(loc.lon).toBeCloseTo(-77.61, 2);
+    expect(loc.label.toLowerCase()).toMatch(/rochester/);
     expect(coastlineFor(loc)).toMatch(/Lake Ontario/i);
   });
 
@@ -77,7 +77,7 @@ describe("tool response shape + defaults", () => {
   it("advice helper returns structured risks/actions, coastline, and human string", () => {
     const advice = evaluateDocAdvice({
       locationName: "Rochester",
-      nearestCoastline: "Lake Ontario shoreline (North Greece / Charlotte / Braddock Bay)",
+      nearestCoastline: "Lake Ontario shoreline (Charlotte / Braddock Bay)",
       asset: "maritime",
       conditions: {
         source: "api.weather.gov",

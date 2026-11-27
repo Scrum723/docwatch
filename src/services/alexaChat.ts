@@ -45,7 +45,7 @@ function pickLocation(s: string, last: string): string {
   if (/\bfairport\b/.test(s)) return "fairport";
   if (/\bsodus\b/.test(s)) return "sodus";
   if (/\blong pond\b|\bgreece\b/.test(s)) return "long_pond";
-  if (/\brochester\b|\bnorth greece\b|\broc\b/.test(s)) return "rochester";
+  if (/\brochester\b|\broc\b/.test(s)) return "rochester";
   return last || "rochester";
 }
 
