@@ -37,7 +37,7 @@ describe("sanitizeSpokenText (shipped spoken polish)", () => {
 describe("buildSpokenBriefingTemplate (shipped template path)", () => {
   it("grounds a quiet briefing in NWS language without robotic DOC flags", () => {
     const text = buildSpokenBriefingTemplate({
-      location: "Rochester / North Greece / Long Pond Road area",
+      location: "Rochester, NY",
       temp: 37,
       desc: "Clear",
       alertEvents: [],

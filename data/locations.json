@@ -4,24 +4,21 @@
     "rochester": {
       "key": "rochester",
       "name": "Rochester, NY",
-      "label": "Rochester / North Greece / Long Pond Road area",
-      "lat": 43.255,
-      "lon": -77.685,
-      "nearestCoastline": "Lake Ontario shoreline (North Greece / Charlotte / Braddock Bay)",
+      "label": "Rochester, NY (Monroe County)",
+      "lat": 43.16,
+      "lon": -77.61,
+      "nearestCoastline": "Lake Ontario shoreline (Charlotte / Braddock Bay)",
       "aliases": [
         "roc",
-        "rochester ny",
-        "north greece",
-        "long pond",
-        "long pond road"
+        "rochester ny"
       ]
     },
     "fairport": {
       "key": "fairport",
       "name": "Fairport, NY",
-      "label": "Fairport Canal / Erie Canal",
-      "lat": 43.0987,
-      "lon": -77.4419,
+      "label": "Fairport, NY (Erie Canal)",
+      "lat": 43.1,
+      "lon": -77.44,
       "nearestCoastline": "Lake Ontario via Irondequoit Bay / Seabreeze corridor",
       "aliases": [
         "fairport ny",
@@ -30,23 +27,24 @@
     },
     "long_pond": {
       "key": "long_pond",
-      "name": "Long Pond, Greece NY",
-      "label": "Long Pond shoreline",
-      "lat": 43.2585,
-      "lon": -77.692,
-      "nearestCoastline": "Lake Ontario at Long Pond / North Greece",
+      "name": "Greece, NY",
+      "label": "Greece, NY (Lake Ontario shore)",
+      "lat": 43.21,
+      "lon": -77.69,
+      "nearestCoastline": "Lake Ontario at Greece / Braddock Bay",
       "aliases": [
-        "long pond greece",
+        "greece",
         "greece ny",
-        "north greece docks"
+        "long pond",
+        "long pond greece"
       ]
     },
     "buffalo": {
       "key": "buffalo",
       "name": "Buffalo, NY",
       "label": "Buffalo / Lake Erie waterfront",
-      "lat": 42.886,
-      "lon": -78.878,
+      "lat": 42.89,
+      "lon": -78.88,
       "nearestCoastline": "Lake Erie shoreline (Buffalo harbor / Outer Harbor)",
       "aliases": [
         "buffalo ny",
@@ -58,8 +56,8 @@
       "key": "sodus",
       "name": "Sodus Point, NY",
       "label": "Sodus Point / Lake Ontario",
-      "lat": 43.271,
-      "lon": -76.975,
+      "lat": 43.27,
+      "lon": -76.98,
       "nearestCoastline": "Lake Ontario at Sodus Bay / Sodus Point",
       "aliases": [
         "sodus",

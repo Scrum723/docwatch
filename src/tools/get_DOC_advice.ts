@@ -7,7 +7,7 @@ import { toolError, toolResult } from "./types.js";
 
 export const getDocAdviceSchema = {
   city: z.string().optional(),
-  location: z.string().optional().describe("Location; defaults to Rochester / Long Pond"),
+  location: z.string().optional().describe("Location; defaults to Rochester, NY"),
   lat: z.number().optional(),
   lon: z.number().optional(),
   asset: z

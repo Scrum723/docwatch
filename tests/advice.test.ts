@@ -18,12 +18,12 @@ function forecast(periods: NwsForecast["periods"]): NwsForecast {
   return { source: "api.weather.gov", periods, hoursRequested: 24 };
 }
 
-const coast = "Lake Ontario shoreline (North Greece / Charlotte / Braddock Bay)";
+const coast = "Lake Ontario shoreline (Charlotte / Braddock Bay)";
 
 describe("evaluateDocAdvice (shipped rules)", () => {
   it("flags freeze when temp ≤ 36°F and recommends maritime actions", () => {
     const result = evaluateDocAdvice({
-      locationName: "Rochester / Long Pond",
+      locationName: "Rochester, NY",
       nearestCoastline: coast,
       asset: "maritime",
       conditions: conditions({ temperatureF: 34 }),
@@ -42,7 +42,7 @@ describe("evaluateDocAdvice (shipped rules)", () => {
 
   it("uses quiet conversational copy when no elevated risks and cites coastline", () => {
     const result = evaluateDocAdvice({
-      locationName: "Rochester / Long Pond",
+      locationName: "Rochester, NY",
       nearestCoastline: coast,
       asset: "home",
       conditions: conditions({ temperatureF: 52, windGustMph: 10 }),
